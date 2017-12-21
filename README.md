@@ -23,6 +23,8 @@ func TestSomething(tt *testing.T) {
 
 ## Installation
 
+Require [Go 1.9](https://golang.org/doc/go1.9#test-helper).
+
 ```
 go get github.com/powerman/check
 ```
