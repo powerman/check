@@ -28,11 +28,11 @@ func format(msg ...interface{}) string {
 }
 
 func match(actual *interface{}, regex interface{}) bool {
+	if *actual == nil {
+		return false
+	}
 	if err, _ := (*actual).(error); err != nil {
 		*actual = err.Error()
-	}
-	if *actual == nil {
-		*actual = ""
 	}
 	if pattern, ok := regex.(string); ok {
 		regex = regexp.MustCompile(pattern)

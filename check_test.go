@@ -63,7 +63,7 @@ func TestCheckers(tt *testing.T) {
 	t.Match("World", regexp.MustCompile(`(?i)w`))
 	t.Match(io.ErrClosedPipe, "closed pipe")
 	var err error
-	t.Match(err, "^$")
+	t.NotMatch(err, "some error")
 	t.NotMatch(" ", `^$`)
 	t.NotMatch("", `^\s+$`)
 	t.NotMatch("World", `w`)

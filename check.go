@@ -158,7 +158,7 @@ func (t *T) NotDeepEqual(actual, expected interface{}, msg ...interface{}) bool 
 
 // Match checks for regex.MatchString(actual).
 // If actual is an error will match with actual.Error().
-// If actual is nil will match with "".
+// If actual is nil it won't match anything.
 // It will compile regex if given as string.
 func (t *T) Match(actual, regex interface{}, msg ...interface{}) bool {
 	t.Helper()
@@ -170,7 +170,7 @@ func (t *T) Match(actual, regex interface{}, msg ...interface{}) bool {
 
 // NotMatch checks for !regex.MatchString(actual).
 // If actual is an error will match with actual.Error().
-// If actual is nil will match with "".
+// If actual is nil it won't match anything.
 // It will compile regex if given as string.
 func (t *T) NotMatch(actual, regex interface{}, msg ...interface{}) bool {
 	t.Helper()
@@ -248,6 +248,7 @@ func (t *T) NotErr(actual, expected error, msg ...interface{}) bool {
 }
 
 // Panic checks is actual() panics and panic text match regex.
+// In case of panic(nil) it will match like panic("<nil>").
 func (t *T) Panic(actual func(), regex interface{}, msg ...interface{}) bool {
 	t.Helper()
 	var panicVal interface{}
@@ -260,7 +261,9 @@ func (t *T) Panic(actual func(), regex interface{}, msg ...interface{}) bool {
 	if !didPanic {
 		return t.fail0(msg...)
 	}
-	if _, ok := panicVal.(string); !ok {
+	switch panicVal.(type) {
+	case string, error:
+	default:
 		panicVal = fmt.Sprintf("%#v", panicVal)
 	}
 	if match(&panicVal, regex) {
