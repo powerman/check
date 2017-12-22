@@ -51,8 +51,16 @@ func (t *T) fail1(actual interface{}, msg ...interface{}) bool {
 
 func (t *T) fail2(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	t.Errorf("%s\nChecker:  %s\nExpected: %#v\nActual:   %#v",
-		format(msg...), caller(1), expected, actual)
+	actualStr, actualMultiline := toString(actual)
+	expectedStr, expectedMultiline := toString(expected)
+	var diff string
+	if actualMultiline || expectedMultiline {
+		diff = diffStrings(expectedStr, actualStr)
+	}
+	failure := fmt.Sprintf("%s\nChecker:  %s\nExpected: %s\nActual:   %s%s",
+		format(msg...), caller(1), expectedStr, actualStr, diff)
+	t.Errorf(failure)
+	printConveyJSON(actualStr, expectedStr, failure)
 	return fail(t.T)
 }
 
