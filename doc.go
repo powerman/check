@@ -11,6 +11,7 @@
 //   - 100% compatible with testing package - check package just provide
 //     convenient wrappers for *testing.T methods and doesn't introduce
 //     new concepts like BDD, custom test suite or unusual execution flow.
+//   - Very easy to add your own check functions.
 //   - Concise, handy and consistent API, without dot-import!
 //
 // Quickstart
@@ -80,6 +81,9 @@
 //
 //	t.EQ(got, want) // same as t.Equal
 //	t.NE(got, want) // same as t.NotEqual
+//
+// ★ If you need custom check, which isn't available out-of-box - see
+// Should checker, it'll let you plug in your own checker with ease.
 //
 // ★ It will panic when called with arg of wrong type - because this means
 // bug in your test.

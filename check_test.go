@@ -12,6 +12,15 @@ import (
 	"github.com/powerman/check"
 )
 
+func bePositive(_ *check.T, actual interface{}) bool {
+	return actual.(int) > 0
+}
+
+func TestCustomCheck(tt *testing.T) {
+	t := check.T{tt}
+	t.Should(bePositive, 42, "custom check!!!")
+}
+
 func TestCheckers(tt *testing.T) {
 	t := check.T{tt}
 

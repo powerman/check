@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -30,23 +32,29 @@ func (t *T) fail0(msg ...interface{}) bool {
 	return fail(t.T)
 }
 
-func (t *T) fail1(actual interface{}, msg ...interface{}) bool {
+func (t *T) fail1(checker string, actual interface{}, msg ...interface{}) bool {
+	if checker == "" {
+		checker = caller(1)
+	}
 	t.Helper()
 	t.Errorf("%s\nChecker:  %s%s%s\nActual:   %s%#v%s\n\n",
 		format(msg...),
-		ansiYellow, caller(1), ansiReset,
+		ansiYellow, checker, ansiReset,
 		ansiRed, actual, ansiReset,
 	)
 	return fail(t.T)
 }
 
-func (t *T) fail2(actual, expected interface{}, msg ...interface{}) bool {
+func (t *T) fail2(checker, actual, expected interface{}, msg ...interface{}) bool {
+	if checker == "" {
+		checker = caller(1)
+	}
 	t.Helper()
 	actualDump := newDump(actual)
 	expectedDump := newDump(expected)
 	failure := fmt.Sprintf("%s\nChecker:  %s%s%s\nExpected: %s%s%sActual:   %s%s%s\n%s",
 		format(msg...),
-		ansiYellow, caller(1), ansiReset,
+		ansiYellow, checker, ansiReset,
 		ansiGreen, expectedDump, ansiReset,
 		ansiRed, actualDump, ansiReset,
 		colouredDiff(actualDump.diff(expectedDump)),
@@ -82,6 +90,79 @@ func (t *T) Must(continueTest bool) {
 		t.FailNow()
 	}
 	pass(t.T)
+}
+
+type (
+	// CheckFunc1 is like Nil or Zero.
+	CheckFunc1 func(t *T, actual interface{}) bool
+	// CheckFunc2 is like Equal or Match.
+	CheckFunc2 func(t *T, actual, expected interface{}) bool
+)
+
+var (
+	typCheckFunc1 = reflect.TypeOf(CheckFunc1(nil))
+	typCheckFunc2 = reflect.TypeOf(CheckFunc2(nil))
+)
+
+// Should use user-provided check function to do actual check.
+//
+// anyCheckFunc must have type CheckFunc1 or CheckFunc2. It should return
+// it's name and true if check was successful. There is no need to call
+// t.Error in anyCheckFunc - this will be done automatically when it
+// returns.
+//
+// args must contain at least 1 element for CheckFunc1 and at least
+// 2 elements for CheckFunc2.
+// Rest of elements will be processed as usual msg ...interface{} param.
+//
+// Example:
+//
+//	func bePositive(_ *check.T, actual interface{}) bool {
+//		return actual.(int) > 0
+//	}
+//	func TestCustomCheck(tt *testing.T) {
+//		t := check.T{tt}
+//		t.Should(bePositive, 42, "custom check!!!")
+//	}
+func (t *T) Should(anyCheckFunc interface{}, args ...interface{}) bool {
+	t.Helper()
+	typ := reflect.TypeOf(anyCheckFunc)
+	val := reflect.ValueOf(anyCheckFunc)
+	if typ.Kind() != reflect.Func {
+		panic("anyCheckFunc is not a function")
+	}
+	switch {
+	case typ.ConvertibleTo(typCheckFunc1):
+		checker := runtime.FuncForPC(val.Pointer()).Name()
+		if i := strings.LastIndex(checker, "."); i != -1 {
+			checker = "Should" + checker[i:]
+		}
+		f := val.Convert(typCheckFunc1).Interface().(CheckFunc1)
+		if len(args) < 1 {
+			panic(checker + " require 1 param")
+		}
+		actual, msg := args[0], args[1:]
+		if f(t, actual) {
+			return pass(t.T)
+		}
+		return t.fail1(checker, actual, msg...)
+	case typ.ConvertibleTo(typCheckFunc2):
+		checker := runtime.FuncForPC(val.Pointer()).Name()
+		if i := strings.LastIndex(checker, "."); i != -1 {
+			checker = "Should" + checker[i:]
+		}
+		f := val.Convert(typCheckFunc2).Interface().(CheckFunc2)
+		if len(args) < 2 {
+			panic(checker + " require 2 param")
+		}
+		actual, expected, msg := args[0], args[1], args[2:]
+		if f(t, actual, expected) {
+			return pass(t.T)
+		}
+		return t.fail2(checker, actual, expected, msg...)
+	default:
+		panic("anyCheckFunc is not a CheckFunc1 or CheckFunc2")
+	}
 }
 
 // Nil checks for actual == nil.
@@ -124,7 +205,7 @@ func (t *T) Nil(actual interface{}, msg ...interface{}) bool {
 	if actual == nil || v.Kind() == reflect.Ptr && v.IsNil() {
 		return pass(t.T)
 	}
-	return t.fail1(actual, msg...)
+	return t.fail1("", actual, msg...)
 }
 
 // NotNil checks for actual != nil.
@@ -171,7 +252,7 @@ func (t *T) Equal(actual, expected interface{}, msg ...interface{}) bool {
 	if actual == expected {
 		return pass(t.T)
 	}
-	return t.fail2(actual, expected, msg...)
+	return t.fail2("", actual, expected, msg...)
 }
 
 // EQ is synonym for Equal (checks for actual == expected).
@@ -180,7 +261,7 @@ func (t *T) EQ(actual, expected interface{}, msg ...interface{}) bool {
 	if actual == expected {
 		return pass(t.T)
 	}
-	return t.fail2(actual, expected, msg...)
+	return t.fail2("", actual, expected, msg...)
 }
 
 // NotEqual checks for actual != expected.
@@ -189,7 +270,7 @@ func (t *T) NotEqual(actual, expected interface{}, msg ...interface{}) bool {
 	if actual != expected {
 		return pass(t.T)
 	}
-	return t.fail1(actual, msg...)
+	return t.fail1("", actual, msg...)
 }
 
 // NE is synonym for NotEqual (checks for actual != expected).
@@ -198,7 +279,7 @@ func (t *T) NE(actual, expected interface{}, msg ...interface{}) bool {
 	if actual != expected {
 		return pass(t.T)
 	}
-	return t.fail1(actual, msg...)
+	return t.fail1("", actual, msg...)
 }
 
 // BytesEqual checks for bytes.Equal(actual, expected).
@@ -209,7 +290,7 @@ func (t *T) BytesEqual(actual, expected []byte, msg ...interface{}) bool {
 	if bytes.Equal(actual, expected) {
 		return pass(t.T)
 	}
-	return t.fail2(actual, expected, msg...)
+	return t.fail2("", actual, expected, msg...)
 }
 
 // NotBytesEqual checks for !bytes.Equal(actual, expected).
@@ -220,7 +301,7 @@ func (t *T) NotBytesEqual(actual, expected []byte, msg ...interface{}) bool {
 	if !bytes.Equal(actual, expected) {
 		return pass(t.T)
 	}
-	return t.fail1(actual, msg...)
+	return t.fail1("", actual, msg...)
 }
 
 // DeepEqual checks for reflect.DeepEqual(actual, expected).
@@ -229,7 +310,7 @@ func (t *T) DeepEqual(actual, expected interface{}, msg ...interface{}) bool {
 	if reflect.DeepEqual(actual, expected) {
 		return pass(t.T)
 	}
-	return t.fail2(actual, expected, msg...)
+	return t.fail2("", actual, expected, msg...)
 }
 
 // NotDeepEqual checks for !reflect.DeepEqual(actual, expected).
@@ -238,7 +319,7 @@ func (t *T) NotDeepEqual(actual, expected interface{}, msg ...interface{}) bool 
 	if !reflect.DeepEqual(actual, expected) {
 		return pass(t.T)
 	}
-	return t.fail1(actual, msg...)
+	return t.fail1("", actual, msg...)
 }
 
 // Match checks for regex.MatchString(actual).
@@ -283,7 +364,7 @@ func (t *T) Contains(actual, expected interface{}, msg ...interface{}) bool {
 	if contains(actual, expected) {
 		return pass(t.T)
 	}
-	return t.fail2(actual, expected, msg...)
+	return t.fail2("", actual, expected, msg...)
 }
 
 // NotContains checks is actual not contains substring/element/key expected.
@@ -294,7 +375,7 @@ func (t *T) NotContains(actual, expected interface{}, msg ...interface{}) bool {
 	if !contains(actual, expected) {
 		return pass(t.T)
 	}
-	return t.fail2(actual, expected, msg...)
+	return t.fail2("", actual, expected, msg...)
 }
 
 // Zero checks is actual is zero value of it's type.
@@ -303,7 +384,7 @@ func (t *T) Zero(actual interface{}, msg ...interface{}) bool {
 	if zero(actual) {
 		return pass(t.T)
 	}
-	return t.fail1(actual, msg...)
+	return t.fail1("", actual, msg...)
 }
 
 // NotZero checks is actual is not zero value of it's type.
@@ -312,7 +393,7 @@ func (t *T) NotZero(actual interface{}, msg ...interface{}) bool {
 	if !zero(actual) {
 		return pass(t.T)
 	}
-	return t.fail1(actual, msg...)
+	return t.fail1("", actual, msg...)
 }
 
 // Len checks is len(actual) == expected.
@@ -322,7 +403,7 @@ func (t *T) Len(actual interface{}, expected int, msg ...interface{}) bool {
 	if l == expected {
 		return pass(t.T)
 	}
-	return t.fail2(l, expected, msg...)
+	return t.fail2("", l, expected, msg...)
 }
 
 // NotLen checks is len(actual) != expected.
@@ -332,7 +413,7 @@ func (t *T) NotLen(actual interface{}, expected int, msg ...interface{}) bool {
 	if l != expected {
 		return pass(t.T)
 	}
-	return t.fail2(l, expected, msg...)
+	return t.fail2("", l, expected, msg...)
 }
 
 // Err checks is actual error is the same as expected error.
@@ -345,7 +426,7 @@ func (t *T) Err(actual, expected error, msg ...interface{}) bool {
 	if fmt.Sprintf("%#v", actual) == fmt.Sprintf("%#v", expected) {
 		return pass(t.T)
 	}
-	return t.fail2(actual, expected, msg...)
+	return t.fail2("", actual, expected, msg...)
 }
 
 // NotErr checks is actual error is not the same as expected error.
@@ -358,7 +439,7 @@ func (t *T) NotErr(actual, expected error, msg ...interface{}) bool {
 	if fmt.Sprintf("%#v", actual) != fmt.Sprintf("%#v", expected) {
 		return pass(t.T)
 	}
-	return t.fail1(actual, msg...)
+	return t.fail1("", actual, msg...)
 }
 
 // Panic checks is actual() panics.

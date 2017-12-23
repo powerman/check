@@ -17,6 +17,7 @@ done right).
 - 100% compatible with testing package - check package just provide
   convenient wrappers for `*testing.T` methods and doesn't introduce new
   concepts like BDD, custom test suite or unusual execution flow.
+- Very easy to add your own check functions.
 - Concise, handy and consistent API, without dot-import!
 
 ## Quickstart
