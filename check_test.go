@@ -12,8 +12,6 @@ import (
 	"github.com/powerman/check"
 )
 
-type method2 func(interface{}, interface{}, ...interface{}) bool
-
 func TestCheckers(tt *testing.T) {
 	t := check.T{tt}
 

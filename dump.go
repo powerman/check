@@ -22,7 +22,6 @@ var spewCfg = spew.ConfigState{
 }
 
 type dump struct {
-	orig         interface{}
 	dump         string
 	indirectType reflect.Type
 }
@@ -41,7 +40,7 @@ func (v dump) diff(expected dump) string {
 		return ""
 	}
 
-	diff, _ := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+	diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 		A:        difflib.SplitLines(expected.dump),
 		B:        difflib.SplitLines(v.dump),
 		FromFile: "Expected",
@@ -50,6 +49,9 @@ func (v dump) diff(expected dump) string {
 		ToDate:   "",
 		Context:  1,
 	})
+	if err != nil {
+		return ""
+	}
 	return "Diff:\n" + diff
 }
 
@@ -64,11 +66,11 @@ func (v dump) diff(expected dump) string {
 // - []byte: same as string instead of hexdump for valid utf8
 // - []rune: use quoted char instead of number for valid runes in list
 // - json.RawMessage: indent, then same as string
-func newDump(i interface{}) dump {
-	d := dump{orig: i}
+func newDump(i interface{}) (d dump) {
+	d.dump = spewCfg.Sdump(i)
 
 	if i == nil {
-		d.dump = "<nil>"
+		d.dump = "<nil>\n"
 		return d
 	}
 
@@ -77,7 +79,6 @@ func newDump(i interface{}) dump {
 	kind := typ.Kind()
 	if kind == reflect.Ptr {
 		if val.IsNil() {
-			d.dump = spewCfg.Sdump(i)
 			return d
 		}
 		val = val.Elem()
@@ -90,46 +91,43 @@ func newDump(i interface{}) dump {
 	case typ == reflect.TypeOf(json.RawMessage(nil)):
 		v := val.Bytes()
 		var buf bytes.Buffer
-		json.Indent(&buf, v, "", "  ")
-		d.dump = fmt.Sprintf("(%T) (len=%d) '\n%s\n'", i, len(v), buf.String())
-		return d
+		if json.Indent(&buf, v, "", "  ") == nil {
+			d.dump = fmt.Sprintf("(%T) (len=%d) '\n%s\n'\n", i, len(v), buf.String())
+		}
+
 	case kind == reflect.Uint8:
 		v := byte(val.Uint())
-		d.dump = fmt.Sprintf("(%T) 0x%02X", i, v)
-		return d
+		d.dump = fmt.Sprintf("(%T) 0x%02X\n", i, v)
+
 	case kind == reflect.Int32:
 		v := rune(val.Int())
 		if utf8.ValidRune(v) {
-			d.dump = fmt.Sprintf("(%T) %q", i, v)
-			return d
+			d.dump = fmt.Sprintf("(%T) %q\n", i, v)
 		}
+
 	case kind == reflect.Slice && typ.Elem().Kind() == reflect.Int32:
 		valid := true
 		for k := 0; k < val.Len() && valid; k++ {
 			valid = valid && utf8.ValidRune(rune(val.Index(k).Int()))
 		}
 		if valid {
-			d.dump = fmt.Sprintf("(%T) %q", i, i)
-			return d
+			d.dump = fmt.Sprintf("(%T) %q\n", i, i)
 		}
+
 	case kind == reflect.String:
 		v := val.String()
 		if utf8.ValidString(v) {
-			d.dump = fmt.Sprintf("(%T) (len=%d) %s", i, len(v), quote(v))
+			d.dump = fmt.Sprintf("(%T) (len=%d) %s\n", i, len(v), quote(v))
 		} else {
 			d.dump = strings.Replace(spewCfg.Sdump([]byte(v)), "([]uint8)", fmt.Sprintf("(%T)", i), 1)
 		}
-		return d
+
 	case kind == reflect.Slice && typ.Elem().Kind() == reflect.Uint8:
 		v := val.Bytes()
 		if len(v) > 0 && utf8.Valid(v) || len(v) == 0 && !val.IsNil() {
-			d.dump = fmt.Sprintf("(%T) (len=%d) %s", i, len(v), quote(string(v)))
-		} else {
-			d.dump = spewCfg.Sdump(i)
+			d.dump = fmt.Sprintf("(%T) (len=%d) %s\n", i, len(v), quote(string(v)))
 		}
-		return d
 	}
-	d.dump = spewCfg.Sdump(i)
 	return d
 }
 

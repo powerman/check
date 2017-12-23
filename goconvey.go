@@ -1,6 +1,7 @@
 package check
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -27,8 +28,12 @@ func printConveyJSON(actual, expected, failure string) {
 		}},
 	}
 
-	fmt.Println(reporting.OpenJson)
-	json.NewEncoder(os.Stdout).Encode(report)
-	fmt.Println(",")
-	fmt.Println(reporting.CloseJson)
+	var buf bytes.Buffer
+	fmt.Fprintln(&buf, reporting.OpenJson)
+	if json.NewEncoder(&buf).Encode(report) != nil {
+		return
+	}
+	fmt.Fprintln(&buf, ",")
+	fmt.Fprintln(&buf, reporting.CloseJson)
+	_, _ = buf.WriteTo(os.Stdout)
 }

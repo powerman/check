@@ -1,7 +1,6 @@
 package check
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -81,14 +80,13 @@ func zero(actual interface{}) bool {
 }
 
 // TODO Use in future checks.
-func normJSON(s string) string {
-	var v interface{}
-	if json.Unmarshal([]byte(s), &v) != nil {
-		return s
-	}
-	if b, err := json.MarshalIndent(v, "", "  "); err != nil {
-		return s
-	} else {
-		return string(b)
-	}
-}
+// func normJSON(s string) string {
+// 	var v interface{}
+// 	if json.Unmarshal([]byte(s), &v) != nil {
+// 		return s
+// 	}
+// 	if b, err := json.MarshalIndent(v, "", "  "); err == nil {
+// 		return string(b)
+// 	}
+// 	return s
+// }

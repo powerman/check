@@ -120,8 +120,8 @@ func TestDump(tt *testing.T) {
 		{false, struct {
 			anon int
 			s    string
-		}{}},
-		{false, named{}},
+		}{0, ""}},
+		{false, named{0, ""}},
 	}
 
 	for _, v := range cases {

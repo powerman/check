@@ -354,7 +354,7 @@ func (t *T) Panic(actual func(), msg ...interface{}) bool {
 	t.Helper()
 	var didPanic = true
 	func() {
-		defer func() { recover() }()
+		defer func() { _ = recover() }()
 		actual()
 		didPanic = false
 	}()
@@ -371,7 +371,7 @@ func (t *T) NotPanic(actual func(), msg ...interface{}) bool {
 	t.Helper()
 	var didPanic = true
 	func() {
-		defer func() { recover() }()
+		defer func() { _ = recover() }()
 		actual()
 		didPanic = false
 	}()
