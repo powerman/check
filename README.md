@@ -1,4 +1,4 @@
-# check [![GoDoc](https://godoc.org/github.com/powerman/check?status.svg)](http://godoc.org/github.com/powerman/check) [![CircleCI](https://circleci.com/gh/powerman/check.svg?style=svg)](https://circleci.com/gh/powerman/check) [![Go Report Card](https://goreportcard.com/badge/github.com/powerman/check)](https://goreportcard.com/report/github.com/powerman/check)
+# check [![GoDoc](https://godoc.org/github.com/powerman/check?status.svg)](http://godoc.org/github.com/powerman/check)[![Go Report Card](https://goreportcard.com/badge/github.com/powerman/check)](https://goreportcard.com/report/github.com/powerman/check)[![CircleCI](https://circleci.com/gh/powerman/check.svg?style=svg)](https://circleci.com/gh/powerman/check)
 
 Checkers for use with Go [testing](https://golang.org/pkg/testing/)
 package
