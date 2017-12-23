@@ -18,10 +18,14 @@ type counter struct {
 func (c counter) report() {
 	var passed, failed string
 	if c.passed != 0 || c.force {
-		passed = fmt.Sprintf("%3d passed", c.passed)
+		passed = fmt.Sprintf("%s%3d passed%s", ansiGreen, c.passed, ansiReset)
 	}
 	if c.failed != 0 || c.force {
-		failed = fmt.Sprintf("%3d failed", c.failed)
+		color := ansiRed
+		if c.failed == 0 {
+			color = ansiReset
+		}
+		failed = fmt.Sprintf("%s%3d failed%s", color, c.failed, ansiReset)
 	}
 	fmt.Printf("  checks:  %10s  %10s\t%s\n", passed, failed, c.name)
 }

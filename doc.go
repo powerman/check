@@ -7,6 +7,7 @@
 //     - Same text diff you loved in testify/assert.
 //     - Also visual diff in GoConvey web UI, if you use it (recommended).
 //   - Statistics with amount of passed/failed checks.
+//   - Colored output in terminal.
 //   - 100% compatible with testing package - check package just provide
 //     convenient wrappers for *testing.T methods and doesn't introduce
 //     new concepts like BDD, custom test suite or unusual execution flow.

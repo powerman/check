@@ -23,15 +23,20 @@ type T struct {
 
 func (t *T) fail0(msg ...interface{}) bool {
 	t.Helper()
-	t.Errorf("%s\nChecker:  %s\n\n",
-		format(msg...), caller(1))
+	t.Errorf("%s\nChecker:  %s%s%s\n\n",
+		format(msg...),
+		ansiYellow, caller(1), ansiReset,
+	)
 	return fail(t.T)
 }
 
 func (t *T) fail1(actual interface{}, msg ...interface{}) bool {
 	t.Helper()
-	t.Errorf("%s\nChecker:  %s\nActual:   %#v\n\n",
-		format(msg...), caller(1), actual)
+	t.Errorf("%s\nChecker:  %s%s%s\nActual:   %s%#v%s\n\n",
+		format(msg...),
+		ansiYellow, caller(1), ansiReset,
+		ansiRed, actual, ansiReset,
+	)
 	return fail(t.T)
 }
 
@@ -39,8 +44,13 @@ func (t *T) fail2(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	actualDump := newDump(actual)
 	expectedDump := newDump(expected)
-	failure := fmt.Sprintf("%s\nChecker:  %s\nExpected: %sActual:   %s\n%s",
-		format(msg...), caller(1), expectedDump, actualDump, actualDump.diff(expectedDump))
+	failure := fmt.Sprintf("%s\nChecker:  %s%s%s\nExpected: %s%s%sActual:   %s%s%s\n%s",
+		format(msg...),
+		ansiYellow, caller(1), ansiReset,
+		ansiGreen, expectedDump, ansiReset,
+		ansiRed, actualDump, ansiReset,
+		colouredDiff(actualDump.diff(expectedDump)),
+	)
 	t.Errorf(failure)
 	printConveyJSON(actualDump.String(), expectedDump.String(), failure)
 	return fail(t.T)
@@ -51,8 +61,12 @@ func (t *T) fail2re(actual, expected interface{}, msg ...interface{}) bool {
 	if regex, ok := expected.(*regexp.Regexp); ok {
 		expected = regex.String()
 	}
-	t.Errorf("%s\nChecker:  %s\nRegexp:   %#v\nActual:   %#v",
-		format(msg...), caller(1), expected, actual)
+	t.Errorf("%s\nChecker:  %s%s%s\nRegexp:   %s%#v%s\nActual:   %s%#v%s",
+		format(msg...),
+		ansiYellow, caller(1), ansiReset,
+		ansiGreen, expected, ansiReset,
+		ansiRed, actual, ansiReset,
+	)
 	return fail(t.T)
 }
 
