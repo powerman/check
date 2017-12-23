@@ -126,18 +126,11 @@ var (
 //	}
 func (t *T) Should(anyCheckFunc interface{}, args ...interface{}) bool {
 	t.Helper()
-	typ := reflect.TypeOf(anyCheckFunc)
-	val := reflect.ValueOf(anyCheckFunc)
-	if typ.Kind() != reflect.Func {
-		panic("anyCheckFunc is not a function")
+	checker := runtime.FuncForPC(reflect.ValueOf(anyCheckFunc).Pointer()).Name()
+	if i := strings.LastIndex(checker, "."); i != -1 {
+		checker = "Should" + checker[i:]
 	}
-	switch {
-	case typ.ConvertibleTo(typCheckFunc1):
-		checker := runtime.FuncForPC(val.Pointer()).Name()
-		if i := strings.LastIndex(checker, "."); i != -1 {
-			checker = "Should" + checker[i:]
-		}
-		f := val.Convert(typCheckFunc1).Interface().(CheckFunc1)
+	if f, ok := anyCheckFunc.(func(t *T, actual interface{}) bool); ok {
 		if len(args) < 1 {
 			panic(checker + " require 1 param")
 		}
@@ -146,12 +139,7 @@ func (t *T) Should(anyCheckFunc interface{}, args ...interface{}) bool {
 			return pass(t.T)
 		}
 		return t.fail1(checker, actual, msg...)
-	case typ.ConvertibleTo(typCheckFunc2):
-		checker := runtime.FuncForPC(val.Pointer()).Name()
-		if i := strings.LastIndex(checker, "."); i != -1 {
-			checker = "Should" + checker[i:]
-		}
-		f := val.Convert(typCheckFunc2).Interface().(CheckFunc2)
+	} else if f, ok := anyCheckFunc.(func(t *T, actual, expected interface{}) bool); ok {
 		if len(args) < 2 {
 			panic(checker + " require 2 param")
 		}
@@ -160,9 +148,8 @@ func (t *T) Should(anyCheckFunc interface{}, args ...interface{}) bool {
 			return pass(t.T)
 		}
 		return t.fail2(checker, actual, expected, msg...)
-	default:
-		panic("anyCheckFunc is not a CheckFunc1 or CheckFunc2")
 	}
+	panic("anyCheckFunc is not a CheckFunc1 or CheckFunc2")
 }
 
 // Nil checks for actual == nil.

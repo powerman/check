@@ -16,9 +16,14 @@ func bePositive(_ *check.T, actual interface{}) bool {
 	return actual.(int) > 0
 }
 
+func beEqual(_ *check.T, actual, expected interface{}) bool {
+	return actual == expected
+}
+
 func TestCustomCheck(tt *testing.T) {
 	t := check.T{tt}
 	t.Should(bePositive, 42, "custom check!!!")
+	t.Should(beEqual, 123, 123)
 }
 
 func TestCheckers(tt *testing.T) {
