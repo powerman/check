@@ -308,6 +308,8 @@ func TestCheckers(tt *testing.T) {
 		{int8(-1), int8(0)},
 		{'a', 'b'},
 		{2 << 60, 2 << 61},
+		{byte(254), byte(255)},
+		{uint64(0), uint64(1)},
 		{0.1, 0.2},
 		{"a1", "a2"},
 	}

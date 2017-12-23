@@ -533,6 +533,12 @@ func (t *T) PanicNotMatch(actual func(), regex interface{}, msg ...interface{}) 
 }
 
 // Less checks for actual < expected.
+//
+// Both actual and expected must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
 func (t *T) Less(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if less(actual, expected) {
@@ -542,6 +548,12 @@ func (t *T) Less(actual, expected interface{}, msg ...interface{}) bool {
 }
 
 // LT is synonym for Less (checks for actual < expected).
+//
+// Both actual and expected must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
 func (t *T) LT(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if less(actual, expected) {
@@ -551,6 +563,12 @@ func (t *T) LT(actual, expected interface{}, msg ...interface{}) bool {
 }
 
 // LessOrEqual checks for actual <= expected.
+//
+// Both actual and expected must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
 func (t *T) LessOrEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !greater(actual, expected) {
@@ -560,6 +578,12 @@ func (t *T) LessOrEqual(actual, expected interface{}, msg ...interface{}) bool {
 }
 
 // LE is synonym for LessOrEqual (checks for actual <= expected).
+//
+// Both actual and expected must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
 func (t *T) LE(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !greater(actual, expected) {
@@ -569,6 +593,12 @@ func (t *T) LE(actual, expected interface{}, msg ...interface{}) bool {
 }
 
 // Greater checks for actual > expected.
+//
+// Both actual and expected must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
 func (t *T) Greater(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if greater(actual, expected) {
@@ -578,6 +608,12 @@ func (t *T) Greater(actual, expected interface{}, msg ...interface{}) bool {
 }
 
 // GT is synonym for Greater (checks for actual > expected).
+//
+// Both actual and expected must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
 func (t *T) GT(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if greater(actual, expected) {
@@ -587,6 +623,12 @@ func (t *T) GT(actual, expected interface{}, msg ...interface{}) bool {
 }
 
 // GreaterOrEqual checks for actual >= expected.
+//
+// Both actual and expected must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
 func (t *T) GreaterOrEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !less(actual, expected) {
@@ -596,6 +638,12 @@ func (t *T) GreaterOrEqual(actual, expected interface{}, msg ...interface{}) boo
 }
 
 // GE is synonym for GreaterOrEqual (checks for actual >= expected).
+//
+// Both actual and expected must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
 func (t *T) GE(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !less(actual, expected) {
