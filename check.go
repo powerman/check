@@ -531,3 +531,75 @@ func (t *T) PanicNotMatch(actual func(), regex interface{}, msg ...interface{}) 
 	}
 	return t.fail2re(panicVal, regex, msg...)
 }
+
+// Less checks for actual < expected.
+func (t *T) Less(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if less(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}
+
+// LT is synonym for Less (checks for actual < expected).
+func (t *T) LT(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if less(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}
+
+// LessOrEqual checks for actual <= expected.
+func (t *T) LessOrEqual(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !greater(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}
+
+// LE is synonym for LessOrEqual (checks for actual <= expected).
+func (t *T) LE(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !greater(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}
+
+// Greater checks for actual > expected.
+func (t *T) Greater(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if greater(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}
+
+// GT is synonym for Greater (checks for actual > expected).
+func (t *T) GT(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if greater(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}
+
+// GreaterOrEqual checks for actual >= expected.
+func (t *T) GreaterOrEqual(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !less(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}
+
+// GE is synonym for GreaterOrEqual (checks for actual >= expected).
+func (t *T) GE(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !less(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}

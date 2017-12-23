@@ -79,6 +79,34 @@ func zero(actual interface{}) bool {
 	return false
 }
 
+func less(actual, expected interface{}) bool {
+	switch v1, v2 := reflect.ValueOf(actual), reflect.ValueOf(expected); v1.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v1.Int() < v2.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v1.Uint() < v2.Uint()
+	case reflect.Float32, reflect.Float64:
+		return v1.Float() < v2.Float()
+	case reflect.String:
+		return v1.String() < v2.String()
+	}
+	panic("actual is not a number or string")
+}
+
+func greater(actual, expected interface{}) bool {
+	switch v1, v2 := reflect.ValueOf(actual), reflect.ValueOf(expected); v1.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v1.Int() > v2.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v1.Uint() > v2.Uint()
+	case reflect.Float32, reflect.Float64:
+		return v1.Float() > v2.Float()
+	case reflect.String:
+		return v1.String() > v2.String()
+	}
+	panic("actual is not a number or string")
+}
+
 // TODO Use in future checks.
 // func normJSON(s string) string {
 // 	var v interface{}

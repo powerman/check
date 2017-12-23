@@ -302,4 +302,39 @@ func TestCheckers(tt *testing.T) {
 		t.PanicNotMatch(func() { panic("oops") }, "(?-i)Oops")
 		t.PanicNotMatch(func() { panic(t) }, "^*testing.T{")
 	})
+
+	less := []struct{ actual, expected interface{} }{
+		{0, 1},
+		{int8(-1), int8(0)},
+		{'a', 'b'},
+		{2 << 60, 2 << 61},
+		{0.1, 0.2},
+		{"a1", "a2"},
+	}
+	t.Run("Less+LT+LessOrEqual+LE", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		for _, v := range less {
+			actual, expected := v.actual, v.expected
+			t.Less(actual, expected)
+			t.LT(actual, expected)
+			t.LessOrEqual(actual, expected)
+			t.LessOrEqual(actual, actual)
+			t.LE(actual, expected)
+			t.LE(actual, actual)
+		}
+	})
+	t.Run("Greater+GT+GreaterOrEqual+GE", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		for _, v := range less {
+			actual, expected := v.expected, v.actual
+			t.Greater(actual, expected)
+			t.GT(actual, expected)
+			t.GreaterOrEqual(actual, expected)
+			t.GreaterOrEqual(actual, actual)
+			t.GE(actual, expected)
+			t.GE(actual, actual)
+		}
+	})
 }

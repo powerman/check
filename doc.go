@@ -81,6 +81,10 @@
 //
 //	t.EQ(got, want) // same as t.Equal
 //	t.NE(got, want) // same as t.NotEqual
+//	t.LT(got, want) // same as t.Less
+//	t.LE(got, want) // same as t.LessOrEqual
+//	t.GT(got, want) // same as t.Greater
+//	t.GE(got, want) // same as t.GreaterOrEqual
 //
 // ★ If you need custom check, which isn't available out-of-box - see
 // Should checker, it'll let you plug in your own checker with ease.
