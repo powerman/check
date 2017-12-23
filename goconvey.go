@@ -10,7 +10,7 @@ import (
 )
 
 func printConveyJSON(actual, expected, failure string) {
-	if !flags.Detect().conveyJSON {
+	if !flags.detect().conveyJSON {
 		return
 	}
 

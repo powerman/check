@@ -1,25 +1,3 @@
-// Package check provide helpers to complement Go testing package.
-//
-// To use helpers just wrap each *testing.T in check.T:
-//
-//   func TestSomething(tt *testing.T) {
-//       t := check.T{tt}
-//       t.Equal(2, 2)
-//       t.Log("You can use new t just like usual *testing.T")
-//       t.Run("Subtests are supported too", func(tt *testing.T) {
-//           t := check.T{tt}
-//           t.Parallel()
-//           t.NotEqual(2, 3)
-//           obj, err := NewObj()
-//           if t.Nil(err) {
-//               t.Match(obj.field, `^\d+$`)
-//           }
-//       })
-//   }
-//
-// To get optional statistics about executed checkers add this:
-//
-//   func TestMain(m *testing.M) { check.TestMain(m) }
 package check
 
 import (
@@ -30,21 +8,29 @@ import (
 	"testing"
 )
 
-// T wraps *testing.T to make it convenient to call checkers in tests.
+// T wraps *testing.T to make it convenient to call checkers in test.
+//
+// It's convenient to rename Test function's arg from t to something
+// else, create wrapped variable with usual name t and use only t:
+//
+//	func TestSomething(tt *testing.T) {
+//		t := check.T{tt}
+//		// use only t in test and don't touch tt anymore
+//	}
 type T struct {
 	*testing.T
 }
 
 func (t *T) fail0(msg ...interface{}) bool {
 	t.Helper()
-	t.Errorf("%s\nChecker:  %s",
+	t.Errorf("%s\nChecker:  %s\n\n",
 		format(msg...), caller(1))
 	return fail(t.T)
 }
 
 func (t *T) fail1(actual interface{}, msg ...interface{}) bool {
 	t.Helper()
-	t.Errorf("%s\nChecker:  %s\nActual:   %#v",
+	t.Errorf("%s\nChecker:  %s\nActual:   %#v\n\n",
 		format(msg...), caller(1), actual)
 	return fail(t.T)
 }
@@ -53,7 +39,7 @@ func (t *T) fail2(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	actualDump := newDump(actual)
 	expectedDump := newDump(expected)
-	failure := fmt.Sprintf("%s\nChecker:  %s\nExpected: %s\nActual:   %s%s",
+	failure := fmt.Sprintf("%s\nChecker:  %s\nExpected: %sActual:   %s\n%s",
 		format(msg...), caller(1), expectedDump, actualDump, actualDump.diff(expectedDump))
 	t.Errorf(failure)
 	printConveyJSON(actualDump.String(), expectedDump.String(), failure)
@@ -70,7 +56,84 @@ func (t *T) fail2re(actual, expected interface{}, msg ...interface{}) bool {
 	return fail(t.T)
 }
 
+// Must interrupt test using t.FailNow if called with false value.
+//
+// This provides easy way to turn any check into assertion:
+//
+//   t.Must(t.Nil(err))
+func (t *T) Must(continueTest bool) {
+	t.Helper()
+	if !continueTest {
+		t.fail0()
+		t.FailNow()
+	}
+	pass(t.T)
+}
+
+// Nil checks for actual == nil.
+//
+// There is one subtle difference between this check and Go `== nil` (if
+// this surprises you then you should read
+// https://golang.org/doc/faq#nil_error first):
+//
+//	var intPtr *int
+//	var empty interface{}
+//	var notEmpty interface{} = intPtr
+//	t.True(intPtr == nil)   // TRUE
+//	t.True(empty == nil)    // TRUE
+//	t.True(notEmpty == nil) // FALSE
+//
+// When you call this function your actual value will be stored in
+// interface{} argument, and this makes any typed nil pointer value `!=
+// nil` inside this function (just like in example above happens with
+// notEmpty variable).
+//
+// As it is very common case to check some typed pointer using Nil this
+// check has to work around and detect nil even if usual `== nil` return
+// false. But this has nasty side effect: if actual value already was of
+// interface type and contains some typed nil pointer (which is usually
+// bad thing and should be avoid) then Nil check will pass (which may be
+// not what you want/expect):
+//
+//	t.Nil(nil)              // TRUE
+//	t.Nil(intPtr)           // TRUE
+//	t.Nil(empty)            // TRUE
+//	t.Nil(notEmpty)         // WARNING: also TRUE!
+//
+// Second subtle case is less usual: uintptr(0) is sorta nil, but not
+// really, so Nil(uintptr(0)) will fail. Nil(unsafe.Pointer(nil)) will
+// also fail, for the same reason. Please do not use this and consider
+// this behaviour undefined, because it may change in the future.
+func (t *T) Nil(actual interface{}, msg ...interface{}) bool {
+	t.Helper()
+	v := reflect.ValueOf(actual)
+	if actual == nil || v.Kind() == reflect.Ptr && v.IsNil() {
+		return pass(t.T)
+	}
+	return t.fail1(actual, msg...)
+}
+
+// NotNil checks for actual != nil.
+//
+// See Nil about subtle case in check logic.
+func (t *T) NotNil(actual interface{}, msg ...interface{}) bool {
+	t.Helper()
+	v := reflect.ValueOf(actual)
+	if !(actual == nil || v.Kind() == reflect.Ptr && v.IsNil()) {
+		return pass(t.T)
+	}
+	return t.fail0(msg...)
+}
+
 // True checks for cond == true.
+//
+// This can be useful to use your own custom checks, but this way you
+// won't get nice dump/diff for actual/expected values. You'll still have
+// statistics about passed/failed checks and it's shorter than usual:
+//
+//	if !cond {
+//		t.Errorf(msg...)
+//	}
 func (t *T) True(cond bool, msg ...interface{}) bool {
 	t.Helper()
 	if cond {
@@ -88,26 +151,17 @@ func (t *T) False(cond bool, msg ...interface{}) bool {
 	return t.fail0(msg...)
 }
 
-// Nil checks for actual == nil.
-func (t *T) Nil(actual interface{}, msg ...interface{}) bool {
-	t.Helper()
-	if actual == nil {
-		return pass(t.T)
-	}
-	return t.fail1(actual, msg...)
-}
-
-// NotNil checks for actual != nil.
-func (t *T) NotNil(actual interface{}, msg ...interface{}) bool {
-	t.Helper()
-	if actual != nil {
-		return pass(t.T)
-	}
-	return t.fail0(msg...)
-}
-
 // Equal checks for actual == expected.
 func (t *T) Equal(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if actual == expected {
+		return pass(t.T)
+	}
+	return t.fail2(actual, expected, msg...)
+}
+
+// EQ is synonym for Equal (checks for actual == expected).
+func (t *T) EQ(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if actual == expected {
 		return pass(t.T)
@@ -124,7 +178,18 @@ func (t *T) NotEqual(actual, expected interface{}, msg ...interface{}) bool {
 	return t.fail1(actual, msg...)
 }
 
+// NE is synonym for NotEqual (checks for actual != expected).
+func (t *T) NE(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if actual != expected {
+		return pass(t.T)
+	}
+	return t.fail1(actual, msg...)
+}
+
 // BytesEqual checks for bytes.Equal(actual, expected).
+//
+// Hint: BytesEqual([]byte{}, []byte(nil)) is true (unlike DeepEqual).
 func (t *T) BytesEqual(actual, expected []byte, msg ...interface{}) bool {
 	t.Helper()
 	if bytes.Equal(actual, expected) {
@@ -134,6 +199,8 @@ func (t *T) BytesEqual(actual, expected []byte, msg ...interface{}) bool {
 }
 
 // NotBytesEqual checks for !bytes.Equal(actual, expected).
+//
+// Hint: NotBytesEqual([]byte{}, []byte(nil)) is false (unlike NotDeepEqual).
 func (t *T) NotBytesEqual(actual, expected []byte, msg ...interface{}) bool {
 	t.Helper()
 	if !bytes.Equal(actual, expected) {
@@ -161,9 +228,14 @@ func (t *T) NotDeepEqual(actual, expected interface{}, msg ...interface{}) bool 
 }
 
 // Match checks for regex.MatchString(actual).
-// If actual is an error will match with actual.Error().
-// If actual is nil it won't match anything.
-// It will compile regex if given as string.
+//
+// Regex type can be either *regexp.Regexp or string.
+//
+// Actual type can be:
+//   - string       - will match with actual
+//   - fmt.Stringer - will match with actual.String()
+//   - error        - will match with actual.Error()
+//   - nil          - will not match (even with empty regex)
 func (t *T) Match(actual, regex interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if match(&actual, regex) {
@@ -173,9 +245,8 @@ func (t *T) Match(actual, regex interface{}, msg ...interface{}) bool {
 }
 
 // NotMatch checks for !regex.MatchString(actual).
-// If actual is an error will match with actual.Error().
-// If actual is nil it won't match anything.
-// It will compile regex if given as string.
+//
+// See Match about supported actual/regex types and check logic.
 func (t *T) NotMatch(actual, regex interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !match(&actual, regex) {
@@ -185,7 +256,14 @@ func (t *T) NotMatch(actual, regex interface{}, msg ...interface{}) bool {
 }
 
 // Contains checks is actual contains substring/element/key expected.
+//
 // Supported actual types are: string, array, slice, map.
+//
+// Type of expected depends on type of actual:
+//   - if actual is a string, then expected should be a string
+//   - if actual is an array, then expected should have array's element type
+//   - if actual is a slice,  then expected should have slice's element type
+//   - if actual is a map,    then expected should have map's key type
 func (t *T) Contains(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if contains(actual, expected) {
@@ -195,7 +273,8 @@ func (t *T) Contains(actual, expected interface{}, msg ...interface{}) bool {
 }
 
 // NotContains checks is actual not contains substring/element/key expected.
-// Supported actual types are: string, array, slice, map.
+//
+// See Contains about supported actual/expected types and check logic.
 func (t *T) NotContains(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !contains(actual, expected) {
@@ -232,8 +311,21 @@ func (t *T) Len(actual interface{}, expected int, msg ...interface{}) bool {
 	return t.fail2(l, expected, msg...)
 }
 
+// NotLen checks is len(actual) != expected.
+func (t *T) NotLen(actual interface{}, expected int, msg ...interface{}) bool {
+	t.Helper()
+	l := reflect.ValueOf(actual).Len()
+	if l != expected {
+		return pass(t.T)
+	}
+	return t.fail2(l, expected, msg...)
+}
+
 // Err checks is actual error is the same as expected error.
-// They may be a different objects, but must have same type and value.
+//
+// They may be a different instances, but must have same type and value.
+//
+// Checking for nil is okay, but using Nil(actual) instead is more clean.
 func (t *T) Err(actual, expected error, msg ...interface{}) bool {
 	t.Helper()
 	if fmt.Sprintf("%#v", actual) == fmt.Sprintf("%#v", expected) {
@@ -243,6 +335,10 @@ func (t *T) Err(actual, expected error, msg ...interface{}) bool {
 }
 
 // NotErr checks is actual error is not the same as expected error.
+//
+// They must have either different types or values (or one should be nil).
+// Different instances with same type and value will be considered the
+// same error, and so is both nil.
 func (t *T) NotErr(actual, expected error, msg ...interface{}) bool {
 	t.Helper()
 	if fmt.Sprintf("%#v", actual) != fmt.Sprintf("%#v", expected) {
@@ -251,9 +347,46 @@ func (t *T) NotErr(actual, expected error, msg ...interface{}) bool {
 	return t.fail1(actual, msg...)
 }
 
-// Panic checks is actual() panics and panic text match regex.
+// Panic checks is actual() panics.
+//
+// It is able to detect panic(nil)… but you should try to avoid using this.
+func (t *T) Panic(actual func(), msg ...interface{}) bool {
+	t.Helper()
+	var didPanic = true
+	func() {
+		defer func() { recover() }()
+		actual()
+		didPanic = false
+	}()
+	if didPanic {
+		return pass(t.T)
+	}
+	return t.fail0(msg...)
+}
+
+// NotPanic checks is actual() don't panics.
+//
+// It is able to detect panic(nil)… but you should try to avoid using this.
+func (t *T) NotPanic(actual func(), msg ...interface{}) bool {
+	t.Helper()
+	var didPanic = true
+	func() {
+		defer func() { recover() }()
+		actual()
+		didPanic = false
+	}()
+	if !didPanic {
+		return pass(t.T)
+	}
+	return t.fail0(msg...)
+}
+
+// PanicMatch checks is actual() panics and panic text match regex.
+//
+// Regex type can be either *regexp.Regexp or string.
+//
 // In case of panic(nil) it will match like panic("<nil>").
-func (t *T) Panic(actual func(), regex interface{}, msg ...interface{}) bool {
+func (t *T) PanicMatch(actual func(), regex interface{}, msg ...interface{}) bool {
 	t.Helper()
 	var panicVal interface{}
 	var didPanic = true
@@ -276,12 +409,30 @@ func (t *T) Panic(actual func(), regex interface{}, msg ...interface{}) bool {
 	return t.fail2re(panicVal, regex, msg...)
 }
 
-// Must interrupt test using t.FailNow if called with false value.
+// PanicNotMatch checks is actual() panics and panic text not match regex.
 //
-//   t.Must(t.Nil(err))
-func (t *T) Must(continueTest bool) {
+// Regex type can be either *regexp.Regexp or string.
+//
+// In case of panic(nil) it will match like panic("<nil>").
+func (t *T) PanicNotMatch(actual func(), regex interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !continueTest {
-		t.FailNow()
+	var panicVal interface{}
+	var didPanic = true
+	func() {
+		defer func() { panicVal = recover() }()
+		actual()
+		didPanic = false
+	}()
+	if !didPanic {
+		return t.fail0(msg...)
 	}
+	switch panicVal.(type) {
+	case string, error:
+	default:
+		panicVal = fmt.Sprintf("%#v", panicVal)
+	}
+	if !match(&panicVal, regex) {
+		return pass(t.T)
+	}
+	return t.fail2re(panicVal, regex, msg...)
 }

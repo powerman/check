@@ -28,15 +28,16 @@ type dump struct {
 }
 
 // String returns dump of value given to newDump.
-func (v *dump) String() string {
+func (v dump) String() string {
 	return v.dump
 }
 
-func (v *dump) diff(expected *dump) string {
+func (v dump) diff(expected dump) string {
 	if v.indirectType != expected.indirectType {
 		return ""
 	}
-	if !strings.ContainsRune(v.dump, '\n') && !strings.ContainsRune(expected.dump, '\n') {
+	if !strings.ContainsRune(v.dump[:len(v.dump)-1], '\n') &&
+		!strings.ContainsRune(expected.dump[:len(expected.dump)-1], '\n') {
 		return ""
 	}
 
@@ -49,7 +50,7 @@ func (v *dump) diff(expected *dump) string {
 		ToDate:   "",
 		Context:  1,
 	})
-	return "\n\nDiff:\n" + diff
+	return "Diff:\n" + diff
 }
 
 // newDump prepare i dump using spew.Sdump in most cases and custom
@@ -63,8 +64,8 @@ func (v *dump) diff(expected *dump) string {
 // - []byte: same as string instead of hexdump for valid utf8
 // - []rune: use quoted char instead of number for valid runes in list
 // - json.RawMessage: indent, then same as string
-func newDump(i interface{}) *dump {
-	d := &dump{orig: i}
+func newDump(i interface{}) dump {
+	d := dump{orig: i}
 
 	if i == nil {
 		d.dump = "<nil>"

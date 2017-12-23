@@ -34,11 +34,11 @@ var stats = struct {
 // Report output statistics about passed/failed checks.
 // It should be called from TestMain after m.Run(), for ex.:
 //
-//   func TestMain(m *testing.M) {
-//       code := m.Run()
-//       check.Report()
-//       os.Exit(code)
-//   }
+//	func TestMain(m *testing.M) {
+//		code := m.Run()
+//		check.Report()
+//		os.Exit(code)
+//	}
 //
 // If this is all you need - just use TestMain instead.
 func Report() {
@@ -64,7 +64,7 @@ func Report() {
 // TestMain provides same default implementation as used by testing
 // package with extra Report call to output statistics. Usage:
 //
-//   func TestMain(m *testing.M) { check.TestMain(m) }
+//	func TestMain(m *testing.M) { check.TestMain(m) }
 func TestMain(m *testing.M) {
 	code := m.Run()
 	Report()

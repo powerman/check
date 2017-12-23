@@ -12,7 +12,7 @@ type peekFlags struct {
 
 var flags peekFlags
 
-func (p *peekFlags) Detect() *peekFlags {
+func (p *peekFlags) detect() *peekFlags {
 	flags.Do(func() {
 		flag.Visit(func(f *flag.Flag) {
 			if f.Name == "convey-json" {

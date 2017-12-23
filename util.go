@@ -1,6 +1,7 @@
 package check
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -44,6 +45,8 @@ func match(actual *interface{}, regex interface{}) bool {
 	}
 	if err, _ := (*actual).(error); err != nil {
 		*actual = err.Error()
+	} else if stringer, _ := (*actual).(fmt.Stringer); stringer != nil {
+		*actual = stringer.String()
 	}
 	if pattern, ok := regex.(string); ok {
 		regex = regexp.MustCompile(pattern)
@@ -75,4 +78,17 @@ func zero(actual interface{}) bool {
 		return reflect.ValueOf(actual).Len() == 0
 	}
 	return false
+}
+
+// TODO Use in future checks.
+func normJSON(s string) string {
+	var v interface{}
+	if json.Unmarshal([]byte(s), &v) != nil {
+		return s
+	}
+	if b, err := json.MarshalIndent(v, "", "  "); err != nil {
+		return s
+	} else {
+		return string(b)
+	}
 }
