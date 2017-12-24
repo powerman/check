@@ -409,4 +409,36 @@ func TestCheckers(tt *testing.T) {
 			t.NotBetweenOrEqual(max, min, mid)
 		}
 	})
+
+	prefix := []struct{ actual, expected interface{} }{
+		{myString("abcde"), []byte("ab")},
+		{[]rune("abcde"), myString("ab")},
+		{time.Time{}, errors.New("0001-01-01")},
+	}
+	t.Run("HasPrefix+NotHasPrefix", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		t.HasPrefix("", myString(""))
+		for _, v := range prefix {
+			actual, expected := v.actual, v.expected
+			t.HasPrefix(actual, expected)
+			t.NotHasPrefix(expected, actual)
+		}
+	})
+
+	suffix := []struct{ actual, expected interface{} }{
+		{myString("abcde"), []byte("de")},
+		{[]rune("abcde"), myString("de")},
+		{time.Time{}, errors.New("UTC")},
+	}
+	t.Run("HasSuffix+NotHasSuffix", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		t.HasSuffix("", myString(""))
+		for _, v := range suffix {
+			actual, expected := v.actual, v.expected
+			t.HasSuffix(actual, expected)
+			t.NotHasSuffix(expected, actual)
+		}
+	})
 }

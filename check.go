@@ -381,17 +381,9 @@ func (t *T) Match(actual, regex interface{}, msg ...interface{}) bool {
 // isMatch updates actual to be a real string used for matching, to make
 // dump easier to understand, but this result in losing type information.
 func isMatch(actual *interface{}, regex interface{}) bool {
-	switch v := (*actual).(type) {
-	case nil:
+	if !stringify(actual) {
 		return false
-	case error:
-		*actual = v.Error()
-	case fmt.Stringer:
-		*actual = v.String()
-	default:
-		*actual = reflect.ValueOf(*actual).Convert(typString).Interface()
 	}
-
 	s := (*actual).(string)
 
 	switch v := regex.(type) {
@@ -401,6 +393,20 @@ func isMatch(actual *interface{}, regex interface{}) bool {
 		return regexp.MustCompile(v).MatchString(s)
 	}
 	panic("regex is not a *regexp.Regexp or string")
+}
+
+func stringify(arg *interface{}) bool {
+	switch v := (*arg).(type) {
+	case nil:
+		return false
+	case error:
+		*arg = v.Error()
+	case fmt.Stringer:
+		*arg = v.String()
+	default:
+		*arg = reflect.ValueOf(*arg).Convert(typString).Interface()
+	}
+	return true
 }
 
 // NotMatch checks for !regex.MatchString(actual).
@@ -908,4 +914,80 @@ func (t *T) NotBetweenOrEqual(actual, min, max interface{}, msg ...interface{}) 
 		arg:  []interface{}{actual, min, max},
 		msg:  msg,
 	})
+}
+
+// HasPrefix checks for strings.HasPrefix(actual, expected).
+//
+// Both actual and expected may have any of these types:
+//   - string       - will use as is
+//   - []byte       - will convert with string()
+//   - []rune       - will convert with string()
+//   - fmt.Stringer - will convert with actual.String()
+//   - error        - will convert with actual.Error()
+//   - nil          - check will always fail
+func (t *T) HasPrefix(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if isHasPrefix(&actual, &expected) {
+		return pass(t.T)
+	}
+	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+}
+
+// isHasPrefix updates actual and expected to be a real string used for check,
+// to make dump easier to understand, but this result in losing type information.
+func isHasPrefix(actual, expected *interface{}) bool {
+	if !(stringify(actual) && stringify(expected)) {
+		return false
+	}
+	strActual, strExpected := (*actual).(string), (*expected).(string)
+	return strings.HasPrefix(strActual, strExpected)
+}
+
+// NotHasPrefix checks for !strings.HasPrefix(actual, expected).
+//
+// See HasPrefix about supported actual/expected types and check logic.
+func (t *T) NotHasPrefix(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !isHasPrefix(&actual, &expected) {
+		return pass(t.T)
+	}
+	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+}
+
+// HasSuffix checks for strings.HasSuffix(actual, expected).
+//
+// Both actual and expected may have any of these types:
+//   - string       - will use as is
+//   - []byte       - will convert with string()
+//   - []rune       - will convert with string()
+//   - fmt.Stringer - will convert with actual.String()
+//   - error        - will convert with actual.Error()
+//   - nil          - check will always fail
+func (t *T) HasSuffix(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if isHasSuffix(&actual, &expected) {
+		return pass(t.T)
+	}
+	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+}
+
+// isHasSuffix updates actual and expected to be a real string used for check,
+// to make dump easier to understand, but this result in losing type information.
+func isHasSuffix(actual, expected *interface{}) bool {
+	if !(stringify(actual) && stringify(expected)) {
+		return false
+	}
+	strActual, strExpected := (*actual).(string), (*expected).(string)
+	return strings.HasSuffix(strActual, strExpected)
+}
+
+// NotHasSuffix checks for !strings.HasSuffix(actual, expected).
+//
+// See HasSuffix about supported actual/expected types and check logic.
+func (t *T) NotHasSuffix(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !isHasSuffix(&actual, &expected) {
+		return pass(t.T)
+	}
+	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
 }
