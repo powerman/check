@@ -47,6 +47,12 @@ func TestCheckers(tt *testing.T) {
 	t.True(empty == nil)
 	t.False(notEmpty == nil)
 
+	loc, err := time.LoadLocation("EST")
+	t.Nil(err)
+	time.Local = time.UTC
+	time1 := time.Now()
+	time2 := time1.In(loc)
+
 	equal := []struct{ actual, expected interface{} }{
 		{nil, nil},
 		{true, true},
@@ -56,6 +62,8 @@ func TestCheckers(tt *testing.T) {
 		{"", ""},
 		{"msg", "msg"},
 		{t, t},
+		{time.Time{}, time.Time{}},
+		{time1, time2},
 	}
 	notEqual := []struct{ actual, expected interface{} }{
 		{nil, true},
@@ -131,6 +139,7 @@ func TestCheckers(tt *testing.T) {
 		t.NotDeepEqual(int64(42), int32(42))
 		t.NotDeepEqual([]byte{}, []byte(nil))
 		t.NotDeepEqual(t, tt)
+		t.NotDeepEqual(time1, time2)
 	})
 
 	t.Run("Match", func(tt *testing.T) {

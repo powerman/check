@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 // T wraps *testing.T to make it convenient to call checkers in test.
@@ -97,11 +98,6 @@ type (
 	CheckFunc1 func(t *T, actual interface{}) bool
 	// CheckFunc2 is like Equal or Match.
 	CheckFunc2 func(t *T, actual, expected interface{}) bool
-)
-
-var (
-	typCheckFunc1 = reflect.TypeOf(CheckFunc1(nil))
-	typCheckFunc2 = reflect.TypeOf(CheckFunc2(nil))
 )
 
 // Should use user-provided check function to do actual check.
@@ -234,9 +230,13 @@ func (t *T) False(cond bool, msg ...interface{}) bool {
 }
 
 // Equal checks for actual == expected.
+//
+// Note: For time.Time it uses actual.Equal(expected) instead.
 func (t *T) Equal(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if actual == expected {
+	if actualTime, ok := actual.(time.Time); ok && actualTime.Equal(expected.(time.Time)) {
+		return pass(t.T)
+	} else if actual == expected {
 		return pass(t.T)
 	}
 	return t.fail2("", actual, expected, msg...)
@@ -245,7 +245,9 @@ func (t *T) Equal(actual, expected interface{}, msg ...interface{}) bool {
 // EQ is synonym for Equal (checks for actual == expected).
 func (t *T) EQ(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if actual == expected {
+	if actualTime, ok := actual.(time.Time); ok && actualTime.Equal(expected.(time.Time)) {
+		return pass(t.T)
+	} else if actual == expected {
 		return pass(t.T)
 	}
 	return t.fail2("", actual, expected, msg...)
