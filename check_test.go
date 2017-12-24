@@ -74,6 +74,7 @@ func TestCheckers(tt *testing.T) {
 		{t, tt},
 		{&testing.T{}, &testing.T{}},
 		{io.EOF, errors.New("EOF")},
+		{time1, time1.Add(time.Second)},
 	}
 	t.Run("Equal", func(tt *testing.T) {
 		t := check.T{tt}

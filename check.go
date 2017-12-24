@@ -38,10 +38,11 @@ func (t *T) fail1(checker string, actual interface{}, msg ...interface{}) bool {
 		checker = caller(1)
 	}
 	t.Helper()
-	t.Errorf("%s\nChecker:  %s%s%s\nActual:   %s%#v%s\n\n",
+	actualDump := newDump(actual)
+	t.Errorf("%s\nChecker:  %s%s%s\nActual:   %s%s%s\n\n",
 		format(msg...),
 		ansiYellow, checker, ansiReset,
-		ansiRed, actual, ansiReset,
+		ansiRed, actualDump, ansiReset,
 	)
 	return fail(t.T)
 }
@@ -256,7 +257,9 @@ func (t *T) EQ(actual, expected interface{}, msg ...interface{}) bool {
 // NotEqual checks for actual != expected.
 func (t *T) NotEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if actual != expected {
+	if actualTime, ok := actual.(time.Time); ok && actualTime.Equal(expected.(time.Time)) {
+		return t.fail2("", actual, expected, msg...)
+	} else if actual != expected {
 		return pass(t.T)
 	}
 	return t.fail1("", actual, msg...)
@@ -265,7 +268,9 @@ func (t *T) NotEqual(actual, expected interface{}, msg ...interface{}) bool {
 // NE is synonym for NotEqual (checks for actual != expected).
 func (t *T) NE(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if actual != expected {
+	if actualTime, ok := actual.(time.Time); ok && actualTime.Equal(expected.(time.Time)) {
+		return t.fail2("", actual, expected, msg...)
+	} else if actual != expected {
 		return pass(t.T)
 	}
 	return t.fail1("", actual, msg...)
