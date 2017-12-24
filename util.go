@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"time"
 )
 
 var typString = reflect.TypeOf("")
@@ -105,6 +106,10 @@ func less(actual, expected interface{}) bool {
 		return v1.Float() < v2.Float()
 	case reflect.String:
 		return v1.String() < v2.String()
+	default:
+		if actualTime, ok := actual.(time.Time); ok {
+			return actualTime.Before(expected.(time.Time))
+		}
 	}
 	panic("actual is not a number or string")
 }
@@ -119,6 +124,10 @@ func greater(actual, expected interface{}) bool {
 		return v1.Float() > v2.Float()
 	case reflect.String:
 		return v1.String() > v2.String()
+	default:
+		if actualTime, ok := actual.(time.Time); ok {
+			return actualTime.After(expected.(time.Time))
+		}
 	}
 	panic("actual is not a number or string")
 }

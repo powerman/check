@@ -353,6 +353,7 @@ func TestCheckers(tt *testing.T) {
 		{uint64(0), uint64(1)},
 		{0.1, 0.2},
 		{"a1", "a2"},
+		{time1, time1.Add(time.Second)},
 	}
 	t.Run("Less+LT+LessOrEqual+LE", func(tt *testing.T) {
 		t := check.T{tt}

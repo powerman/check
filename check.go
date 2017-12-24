@@ -556,6 +556,7 @@ func (t *T) PanicNotMatch(actual func(), regex interface{}, msg ...interface{}) 
 //   - unsigned integers
 //   - floats
 //   - strings
+//   - time.Time
 func (t *T) Less(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if less(actual, expected) {
@@ -571,6 +572,7 @@ func (t *T) Less(actual, expected interface{}, msg ...interface{}) bool {
 //   - unsigned integers
 //   - floats
 //   - strings
+//   - time.Time
 func (t *T) LT(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if less(actual, expected) {
@@ -586,6 +588,7 @@ func (t *T) LT(actual, expected interface{}, msg ...interface{}) bool {
 //   - unsigned integers
 //   - floats
 //   - strings
+//   - time.Time
 func (t *T) LessOrEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !greater(actual, expected) {
@@ -601,6 +604,7 @@ func (t *T) LessOrEqual(actual, expected interface{}, msg ...interface{}) bool {
 //   - unsigned integers
 //   - floats
 //   - strings
+//   - time.Time
 func (t *T) LE(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !greater(actual, expected) {
@@ -616,6 +620,7 @@ func (t *T) LE(actual, expected interface{}, msg ...interface{}) bool {
 //   - unsigned integers
 //   - floats
 //   - strings
+//   - time.Time
 func (t *T) Greater(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if greater(actual, expected) {
@@ -631,6 +636,7 @@ func (t *T) Greater(actual, expected interface{}, msg ...interface{}) bool {
 //   - unsigned integers
 //   - floats
 //   - strings
+//   - time.Time
 func (t *T) GT(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if greater(actual, expected) {
@@ -646,6 +652,7 @@ func (t *T) GT(actual, expected interface{}, msg ...interface{}) bool {
 //   - unsigned integers
 //   - floats
 //   - strings
+//   - time.Time
 func (t *T) GreaterOrEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !less(actual, expected) {
@@ -661,6 +668,7 @@ func (t *T) GreaterOrEqual(actual, expected interface{}, msg ...interface{}) boo
 //   - unsigned integers
 //   - floats
 //   - strings
+//   - time.Time
 func (t *T) GE(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !less(actual, expected) {
