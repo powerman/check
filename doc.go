@@ -41,6 +41,10 @@
 //
 //	func TestMain(m *testing.M) { check.TestMain(m) }
 //
+// When use goconvey tool, to get nice diff in web UI add:
+//
+//	import _ "github.com/smartystreets/goconvey/convey"
+//
 // Hints
 //
 // ★ How to check for errors:

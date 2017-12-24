@@ -23,6 +23,7 @@ func beEqual(_ *check.T, actual, expected interface{}) bool {
 func TestCustomCheck(tt *testing.T) {
 	t := check.T{tt}
 	t.Should(bePositive, 42, "custom check!!!")
+	t.Should(func(_ *check.T, _ interface{}) bool { return true }, 42)
 	t.Should(beEqual, 123, 123)
 }
 
@@ -60,7 +61,7 @@ func TestCheckers(tt *testing.T) {
 		{0, 0},
 		{3.14, 3.14},
 		{"", ""},
-		{"msg", "msg"},
+		{"one\ntwo\nend", "one\ntwo\nend"},
 		{t, t},
 		{time.Time{}, time.Time{}},
 		{time1, time2},

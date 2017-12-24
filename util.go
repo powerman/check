@@ -2,14 +2,11 @@ package check
 
 import (
 	"fmt"
+	"path/filepath"
 	"reflect"
-	"regexp"
 	"runtime"
 	"strings"
-	"time"
 )
-
-var typString = reflect.TypeOf("")
 
 func caller(stack int) (name string) {
 	if pc, _, _, ok := runtime.Caller(stack + 1); ok {
@@ -23,15 +20,32 @@ func caller(stack int) (name string) {
 	return name
 }
 
-func callerFileLines(stack int) (testFile string, funcLine int, testLine int) {
-	if pc, file, line, ok := runtime.Caller(stack + 1); ok {
-		testFile = file
-		testLine = line
-		if f := runtime.FuncForPC(pc); f != nil {
-			_, funcLine = f.FileLine(f.Entry())
-		}
+func myStack(myfile, file string) bool {
+	return filepath.Dir(myfile) == filepath.Dir(file) && !strings.HasSuffix(file, "_test.go")
+}
+
+func callerFileLines() (file string, line int, funcLine int) {
+	pc, file, line, ok := runtime.Caller(0)
+	myfile := file
+	for stack := 1; ok && myStack(myfile, file); stack++ {
+		pc, file, line, ok = runtime.Caller(stack)
 	}
-	return
+	if f := runtime.FuncForPC(pc); f != nil {
+		_, funcLine = f.FileLine(f.Entry())
+	}
+	return file, line, funcLine
+}
+
+// funcName returns f's name without package name.
+func funcName(f interface{}) string {
+	name := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+	if i := strings.LastIndex(name, "/"); i != -1 {
+		name = name[i+1:]
+	}
+	if i := strings.Index(name, "."); i != -1 {
+		name = name[i+1:]
+	}
+	return name
 }
 
 func format(msg ...interface{}) string {
@@ -39,97 +53,6 @@ func format(msg ...interface{}) string {
 		return fmt.Sprintf(msg[0].(string), msg[1:]...)
 	}
 	return fmt.Sprint(msg...)
-}
-
-// match updates actual to be a real string used for matching, to make
-// dump easier to understand, but this result in losing type information.
-func match(actual *interface{}, regex interface{}) bool {
-	if *actual == nil {
-		return false
-	}
-	if err, _ := (*actual).(error); err != nil {
-		*actual = err.Error()
-	} else if stringer, _ := (*actual).(fmt.Stringer); stringer != nil {
-		*actual = stringer.String()
-	} else {
-		*actual = reflect.ValueOf(*actual).Convert(typString).Interface()
-	}
-	if pattern, ok := regex.(string); ok {
-		regex = regexp.MustCompile(pattern)
-	}
-	return regex.(*regexp.Regexp).MatchString((*actual).(string))
-}
-
-func contains(actual, expected interface{}) (found bool) {
-	switch valActual := reflect.ValueOf(actual); valActual.Kind() {
-	case reflect.String:
-		actualStr := valActual.Convert(typString).Interface().(string)
-		expectedStr := reflect.ValueOf(expected).Convert(typString).Interface().(string)
-		found = strings.Contains(actualStr, expectedStr)
-	case reflect.Map:
-		if valActual.Type().Elem() != reflect.TypeOf(expected) {
-			panic("expected type must match actual element type")
-		}
-		keys := valActual.MapKeys()
-		for i := 0; i < len(keys) && !found; i++ {
-			found = valActual.MapIndex(keys[i]).Interface() == expected
-		}
-	case reflect.Slice, reflect.Array:
-		if valActual.Type().Elem() != reflect.TypeOf(expected) {
-			panic("expected type must match actual element type")
-		}
-		for i := 0; i < valActual.Len() && !found; i++ {
-			found = valActual.Index(i).Interface() == expected
-		}
-	}
-	return found
-}
-
-func zero(actual interface{}) bool {
-	if actual == nil {
-		return true
-	} else if typ := reflect.TypeOf(actual); typ.Comparable() {
-		return actual == reflect.Zero(typ).Interface()
-	} else if typ.Kind() != reflect.Struct {
-		return reflect.ValueOf(actual).Len() == 0
-	}
-	return false
-}
-
-func less(actual, expected interface{}) bool {
-	switch v1, v2 := reflect.ValueOf(actual), reflect.ValueOf(expected); v1.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v1.Int() < v2.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v1.Uint() < v2.Uint()
-	case reflect.Float32, reflect.Float64:
-		return v1.Float() < v2.Float()
-	case reflect.String:
-		return v1.String() < v2.String()
-	default:
-		if actualTime, ok := actual.(time.Time); ok {
-			return actualTime.Before(expected.(time.Time))
-		}
-	}
-	panic("actual is not a number or string")
-}
-
-func greater(actual, expected interface{}) bool {
-	switch v1, v2 := reflect.ValueOf(actual), reflect.ValueOf(expected); v1.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v1.Int() > v2.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v1.Uint() > v2.Uint()
-	case reflect.Float32, reflect.Float64:
-		return v1.Float() > v2.Float()
-	case reflect.String:
-		return v1.String() > v2.String()
-	default:
-		if actualTime, ok := actual.(time.Time); ok {
-			return actualTime.After(expected.(time.Time))
-		}
-	}
-	panic("actual is not a number or string")
 }
 
 // TODO Use in future checks.

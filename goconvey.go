@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	_ "github.com/smartystreets/goconvey/convey" // to setup -convey-json flag
 	"github.com/smartystreets/goconvey/convey/reporting"
 )
 
@@ -15,7 +14,7 @@ func printConveyJSON(actual, expected, failure string) {
 		return
 	}
 
-	testFile, funcLine, testLine := callerFileLines(3)
+	testFile, testLine, funcLine := callerFileLines()
 	report := reporting.ScopeResult{
 		File: testFile,
 		Line: funcLine,
