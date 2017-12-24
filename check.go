@@ -37,11 +37,14 @@ const (
 	nameExpected = "Expected:"
 )
 
-// Parallel will be ignored when goconvey run tests - goconvey anyway
-// doesn't provide -test.cpu= and mixed output of parallel tests result in
-// reporting failed tests at wrong places and with wrong count in web UI.
+// Parallel implements an internal workaround which have no visible
+// effect, so you should just call t.Parallel() as you usually do - it
+// will work as expected.
 func (t *T) Parallel() {
 	t.Helper()
+	// Goconvey anyway doesn't provide -test.cpu= and mixed output of
+	// parallel tests result in reporting failed tests at wrong places
+	// and with wrong failed tests count in web UI.
 	if !flags.detect().conveyJSON {
 		t.T.Parallel()
 	}
@@ -806,4 +809,103 @@ func (t *T) GreaterOrEqual(actual, expected interface{}, msg ...interface{}) boo
 func (t *T) GE(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	return t.GreaterOrEqual(actual, expected, msg...)
+}
+
+// Between checks for min < actual < max.
+//
+// All three actual, min and max must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
+//   - time.Time
+func (t *T) Between(actual, min, max interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if isBetween(actual, min, max) {
+		return pass(t.T)
+	}
+	return t.fail(report{
+		name: []string{"", "Min:", "Max:"},
+		arg:  []interface{}{actual, min, max},
+		msg:  msg,
+	})
+}
+
+func isBetween(actual, min, max interface{}) bool {
+	switch v, vmin, vmax := reflect.ValueOf(actual), reflect.ValueOf(min), reflect.ValueOf(max); v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return vmin.Int() < v.Int() && v.Int() < vmax.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return vmin.Uint() < v.Uint() && v.Uint() < vmax.Uint()
+	case reflect.Float32, reflect.Float64:
+		return vmin.Float() < v.Float() && v.Float() < vmax.Float()
+	case reflect.String:
+		return vmin.String() < v.String() && v.String() < vmax.String()
+	default:
+		if actualTime, ok := actual.(time.Time); ok {
+			minTime, maxTime := min.(time.Time), max.(time.Time)
+			return minTime.Before(actualTime) && actualTime.Before(maxTime)
+		}
+	}
+	panic("actual is not a number, string or time.Time")
+}
+
+// NotBetween checks for actual <= min or max <= actual.
+//
+// All three actual, min and max must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
+//   - time.Time
+func (t *T) NotBetween(actual, min, max interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !isBetween(actual, min, max) {
+		return pass(t.T)
+	}
+	return t.fail(report{
+		name: []string{"", "Min:", "Max:"},
+		arg:  []interface{}{actual, min, max},
+		msg:  msg,
+	})
+}
+
+// BetweenOrEqual checks for min <= actual <= max.
+//
+// All three actual, min and max must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
+//   - time.Time
+func (t *T) BetweenOrEqual(actual, min, max interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if isBetween(actual, min, max) || isEqual(actual, min) || isEqual(actual, max) {
+		return pass(t.T)
+	}
+	return t.fail(report{
+		name: []string{"", "Min:", "Max:"},
+		arg:  []interface{}{actual, min, max},
+		msg:  msg,
+	})
+}
+
+// NotBetweenOrEqual checks for actual < min or max < actual.
+//
+// All three actual, min and max must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - strings
+//   - time.Time
+func (t *T) NotBetweenOrEqual(actual, min, max interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !(isBetween(actual, min, max) || isEqual(actual, min) || isEqual(actual, max)) {
+		return pass(t.T)
+	}
+	return t.fail(report{
+		name: []string{"", "Min:", "Max:"},
+		arg:  []interface{}{actual, min, max},
+		msg:  msg,
+	})
 }

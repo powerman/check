@@ -382,4 +382,31 @@ func TestCheckers(tt *testing.T) {
 			t.GE(actual, actual)
 		}
 	})
+
+	between := []struct{ min, mid, max interface{} }{
+		{0, 1, 5},
+		{int8(-1), int8(0), int8(1)},
+		{'a', 'b', 'z'},
+		{2 << 59, 2 << 60, 2 << 61},
+		{byte(0), byte(254), byte(255)},
+		{uint64(0), uint64(1), uint64(5)},
+		{0.01, 0.1, 0.2},
+		{"a1", "a2", "b"},
+		{time1, time1.Add(time.Millisecond), time1.Add(time.Second)},
+	}
+	t.Run("Between+BetweenOrEqual+NotBetween+NotBetweenOrEqual", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		for _, v := range between {
+			min, mid, max := v.min, v.mid, v.max
+			t.Between(mid, min, max)
+			t.BetweenOrEqual(mid, min, max)
+			t.BetweenOrEqual(mid, mid, max)
+			t.BetweenOrEqual(mid, min, mid)
+			t.NotBetween(min, mid, max)
+			t.NotBetween(max, min, mid)
+			t.NotBetweenOrEqual(min, mid, max)
+			t.NotBetweenOrEqual(max, min, mid)
+		}
+	})
 }
