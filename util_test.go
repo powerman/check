@@ -25,6 +25,6 @@ func TestFormat(tt *testing.T) {
 
 func TestCaller(tt *testing.T) {
 	t := T{tt}
-	t.Equal(caller(0), "TestCaller")
-	t.Equal(caller(1000), "")
+	t.Equal(callerFuncName(0), "TestCaller")
+	t.Equal(callerFuncName(1000), "<unknown>")
 }
