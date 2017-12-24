@@ -24,9 +24,9 @@ func TestDump(tt *testing.T) {
 		myString  string
 		myRunes   []rune
 		myBytes   []byte
-		named     struct {
-			named int
-			s     string
+		myStruct  struct {
+			i int
+			s string
 		}
 	)
 	var (
@@ -118,10 +118,10 @@ func TestDump(tt *testing.T) {
 		{false, time.Time{}},
 		{false, time.Now()},
 		{false, struct {
-			anon int
-			s    string
+			i int
+			s string
 		}{0, ""}},
-		{false, named{0, ""}},
+		{false, myStruct{0, ""}},
 	}
 
 	for _, v := range cases {

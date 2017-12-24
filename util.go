@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+var typString = reflect.TypeOf("")
+
 func caller(stack int) (name string) {
 	if pc, _, _, ok := runtime.Caller(stack + 1); ok {
 		if f := runtime.FuncForPC(pc); f != nil {
@@ -54,15 +56,25 @@ func match(actual *interface{}, regex interface{}) bool {
 }
 
 func contains(actual, expected interface{}) (found bool) {
-	actualV := reflect.ValueOf(actual)
-	switch reflect.TypeOf(actual).Kind() {
+	switch valActual := reflect.ValueOf(actual); valActual.Kind() {
 	case reflect.String:
+		actual = valActual.Convert(typString).Interface()
+		expected = reflect.ValueOf(expected).Convert(typString).Interface()
 		found = strings.Contains(actual.(string), expected.(string))
 	case reflect.Map:
-		found = actualV.MapIndex(reflect.ValueOf(expected)).IsValid()
+		if valActual.Type().Elem() != reflect.TypeOf(expected) {
+			panic("expected type must match actual element type")
+		}
+		keys := valActual.MapKeys()
+		for i := 0; i < len(keys) && !found; i++ {
+			found = valActual.MapIndex(keys[i]).Interface() == expected
+		}
 	case reflect.Slice, reflect.Array:
-		for i := 0; i < actualV.Len() && !found; i++ {
-			found = found || actualV.Index(i).Interface() == expected
+		if valActual.Type().Elem() != reflect.TypeOf(expected) {
+			panic("expected type must match actual element type")
+		}
+		for i := 0; i < valActual.Len() && !found; i++ {
+			found = valActual.Index(i).Interface() == expected
 		}
 	}
 	return found

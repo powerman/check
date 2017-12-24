@@ -26,6 +26,10 @@ func TestCustomCheck(tt *testing.T) {
 	t.Should(beEqual, 123, 123)
 }
 
+type (
+	myString string
+)
+
 func TestCheckers(tt *testing.T) {
 	t := check.T{tt}
 
@@ -156,19 +160,38 @@ func TestCheckers(tt *testing.T) {
 		t := check.T{tt}
 		t.Parallel()
 		t.Contains("something", "thing")
+		t.Contains("something", myString("thing"))
+		t.Contains(myString("something"), "thing")
+		t.Contains(myString("something"), myString("thing"))
 		t.Contains([]int{2, 4, 6}, 4)
 		t.Contains([3]*testing.T{nil, tt, nil}, tt)
-		t.Contains(map[*testing.T]int{nil: 2, tt: 5}, tt)
-		t.Contains(map[string]int{"something": 2, "thing": 5}, "thing")
+		t.Contains(map[*testing.T]int{nil: 2, tt: 5}, 5)
+		t.Contains(map[int]string{2: "something", 5: "thing"}, "thing")
 	})
 	t.Run("NotContains", func(tt *testing.T) {
 		t := check.T{tt}
 		t.Parallel()
 		t.NotContains("something", "Thing")
+		t.NotContains("something", myString("Thing"))
+		t.NotContains(myString("something"), "Thing")
+		t.NotContains(myString("something"), myString("Thing"))
 		t.NotContains([]int{2, 4, 6}, 3)
-		t.NotContains([3]*testing.T{nil, tt, nil}, t)
-		t.NotContains(map[*testing.T]int{nil: 2, tt: 5}, &testing.T{})
-		t.NotContains(map[string]int{"something": 2, "thing": 5}, "some")
+		t.NotContains([3]*testing.T{nil, tt, nil}, &testing.T{})
+		t.NotContains(map[*testing.T]int{nil: 2, tt: 5}, 0)
+		t.NotContains(map[int]string{2: "something", 5: "thing"}, "some")
+	})
+
+	t.Run("HasKey", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		t.HasKey(map[*testing.T]int{nil: 2, tt: 5}, tt)
+		t.HasKey(map[int]string{2: "something", 5: "thing"}, 5)
+	})
+	t.Run("NotHasKey", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		t.NotHasKey(map[*testing.T]int{nil: 2, tt: 5}, &testing.T{})
+		t.NotHasKey(map[int]string{2: "something", 5: "thing"}, 0)
 	})
 
 	t.Run("Zero", func(tt *testing.T) {

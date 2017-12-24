@@ -337,15 +337,18 @@ func (t *T) NotMatch(actual, regex interface{}, msg ...interface{}) bool {
 	return t.fail2re(actual, regex, msg...)
 }
 
-// Contains checks is actual contains substring/element/key expected.
+// Contains checks is actual contains substring/element expected.
 //
-// Supported actual types are: string, array, slice, map.
+// Element of array/slice/map is checked using == expected.
 //
 // Type of expected depends on type of actual:
 //   - if actual is a string, then expected should be a string
 //   - if actual is an array, then expected should have array's element type
 //   - if actual is a slice,  then expected should have slice's element type
-//   - if actual is a map,    then expected should have map's key type
+//   - if actual is a map,    then expected should have map's value type
+//
+// Hint: In a map it looks for a value, if you need to look for a key -
+// use HasKey instead.
 func (t *T) Contains(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if contains(actual, expected) {
@@ -354,12 +357,30 @@ func (t *T) Contains(actual, expected interface{}, msg ...interface{}) bool {
 	return t.fail2("", actual, expected, msg...)
 }
 
-// NotContains checks is actual not contains substring/element/key expected.
+// NotContains checks is actual not contains substring/element expected.
 //
 // See Contains about supported actual/expected types and check logic.
 func (t *T) NotContains(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	if !contains(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}
+
+// HasKey checks is actual has key expected.
+func (t *T) HasKey(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if reflect.ValueOf(actual).MapIndex(reflect.ValueOf(expected)).IsValid() {
+		return pass(t.T)
+	}
+	return t.fail2("", actual, expected, msg...)
+}
+
+// NotHasKey checks is actual has no key expected.
+func (t *T) NotHasKey(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !reflect.ValueOf(actual).MapIndex(reflect.ValueOf(expected)).IsValid() {
 		return pass(t.T)
 	}
 	return t.fail2("", actual, expected, msg...)
