@@ -315,6 +315,8 @@ func (t *T) NotDeepEqual(actual, expected interface{}, msg ...interface{}) bool 
 //
 // Actual type can be:
 //   - string       - will match with actual
+//   - []byte       - will match with string(actual)
+//   - []rune       - will match with string(actual)
 //   - fmt.Stringer - will match with actual.String()
 //   - error        - will match with actual.Error()
 //   - nil          - will not match (even with empty regex)

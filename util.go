@@ -40,6 +40,8 @@ func format(msg ...interface{}) string {
 	return fmt.Sprint(msg...)
 }
 
+// match updates actual to be a real string used for matching, to make
+// dump easier to understand, but this result in losing type information.
 func match(actual *interface{}, regex interface{}) bool {
 	if *actual == nil {
 		return false
@@ -48,6 +50,8 @@ func match(actual *interface{}, regex interface{}) bool {
 		*actual = err.Error()
 	} else if stringer, _ := (*actual).(fmt.Stringer); stringer != nil {
 		*actual = stringer.String()
+	} else {
+		*actual = reflect.ValueOf(*actual).Convert(typString).Interface()
 	}
 	if pattern, ok := regex.(string); ok {
 		regex = regexp.MustCompile(pattern)
@@ -58,9 +62,9 @@ func match(actual *interface{}, regex interface{}) bool {
 func contains(actual, expected interface{}) (found bool) {
 	switch valActual := reflect.ValueOf(actual); valActual.Kind() {
 	case reflect.String:
-		actual = valActual.Convert(typString).Interface()
-		expected = reflect.ValueOf(expected).Convert(typString).Interface()
-		found = strings.Contains(actual.(string), expected.(string))
+		actualStr := valActual.Convert(typString).Interface().(string)
+		expectedStr := reflect.ValueOf(expected).Convert(typString).Interface().(string)
+		found = strings.Contains(actualStr, expectedStr)
 	case reflect.Map:
 		if valActual.Type().Elem() != reflect.TypeOf(expected) {
 			panic("expected type must match actual element type")
