@@ -26,7 +26,7 @@ func samePackage(basefile, file string) bool {
 
 func callerFuncName(stack int) string {
 	pc, _, _, _ := runtime.Caller(stack + 1)
-	return strings.TrimPrefix(funcNameAt(pc), "(*T).")
+	return strings.TrimPrefix(funcNameAt(pc), "(*C).")
 }
 
 func funcName(f interface{}) string {

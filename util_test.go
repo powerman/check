@@ -6,7 +6,7 @@ import (
 )
 
 func TestFormat(tt *testing.T) {
-	t := T{tt}
+	t := T(tt)
 	cases := []struct {
 		args []interface{}
 		want string
@@ -24,7 +24,7 @@ func TestFormat(tt *testing.T) {
 }
 
 func TestCaller(tt *testing.T) {
-	t := T{tt}
+	t := T(tt)
 	t.Equal(callerFuncName(0), "TestCaller")
 	t.Equal(callerFuncName(1000), "<unknown>")
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func TestDump(tt *testing.T) {
-	t := T{tt}
+	t := T(tt)
 
 	type (
 		myBool    bool

@@ -19,18 +19,18 @@
 //
 // Quickstart
 //
-// Just wrap each (including subtests) *testing.T in check.T and write
+// Just wrap each (including subtests) *testing.T using check.T() and write
 // tests as usually with testing package. Call new methods provided by
 // this package to have more clean/concise test code and cool dump/diff.
 //
 //	import "github.com/powerman/check"
 //
 //	func TestSomething(tt *testing.T) {
-//		t := check.T{tt}
+//		t := check.T(tt)
 //		t.Equal(2, 2)
 //		t.Log("You can use new t just like usual *testing.T")
 //		t.Run("Subtests/Parallel example", func(tt *testing.T) {
-//			t := check.T{tt}
+//			t := check.T(tt)
 //			t.Parallel()
 //			t.NotEqual(2, 3, "should not be 3!")
 //			obj, err := NewObj()

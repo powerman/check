@@ -14,18 +14,36 @@ import (
 	"github.com/powerman/check"
 )
 
-func bePositive(_ *check.T, actual interface{}) bool {
+func TestTODO(tt *testing.T) {
+	t := check.T(tt)
+	// Normal tests.
+	t.True(true)
+	// If you need to mark just one/few broken tests:
+	t.TODO().True(false)
+	t.True(true)
+	// If there are several broken tests mixed with working ones:
+	todo := t.TODO()
+	t.True(true)
+	todo.True(false)
+	t.True(true)
+	todo.True(false)
+	// If all tests below this point are broken:
+	t = t.TODO()
+	t.True(false)
+}
+
+func bePositive(_ *check.C, actual interface{}) bool {
 	return actual.(int) > 0
 }
 
-func beEqual(_ *check.T, actual, expected interface{}) bool {
+func beEqual(_ *check.C, actual, expected interface{}) bool {
 	return actual == expected
 }
 
 func TestCustomCheck(tt *testing.T) {
-	t := check.T{tt}
+	t := check.T(tt)
 	t.Should(bePositive, 42, "custom check!!!")
-	t.Should(func(_ *check.T, _ interface{}) bool { return true }, 42)
+	t.Should(func(_ *check.C, _ interface{}) bool { return true }, 42)
 	t.Should(beEqual, 123, 123)
 }
 
@@ -34,7 +52,7 @@ type (
 )
 
 func TestCheckers(tt *testing.T) {
-	t := check.T{tt}
+	t := check.T(tt)
 
 	var intPtr *int
 	var empty interface{}
@@ -80,28 +98,28 @@ func TestCheckers(tt *testing.T) {
 		{time1, time1.Add(time.Second)},
 	}
 	t.Run("Equal", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		for _, v := range equal {
 			t.Equal(v.actual, v.expected)
 		}
 	})
 	t.Run("EQ", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		for _, v := range equal {
 			t.EQ(v.actual, v.expected)
 		}
 	})
 	t.Run("NotEqual", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		for _, v := range notEqual {
 			t.NotEqual(v.actual, v.expected)
 		}
 	})
 	t.Run("NE", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		for _, v := range notEqual {
 			t.NE(v.actual, v.expected)
@@ -109,7 +127,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("BytesEqual", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.BytesEqual(nil, nil)
 		t.BytesEqual([]byte(nil), nil)
@@ -118,7 +136,7 @@ func TestCheckers(tt *testing.T) {
 		t.BytesEqual([]byte{0}, []byte{0})
 	})
 	t.Run("NotBytesEqual", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.NotBytesEqual([]byte{0}, nil)
 		t.NotBytesEqual([]byte{0}, []byte{})
@@ -126,7 +144,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("DeepEqual", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.DeepEqual(t, t)
 		t.DeepEqual(tt, tt)
@@ -138,7 +156,7 @@ func TestCheckers(tt *testing.T) {
 		t.DeepEqual(io.EOF, errors.New("EOF"))
 	})
 	t.Run("NotDeepEqual", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.NotDeepEqual(int64(42), int32(42))
 		t.NotDeepEqual([]byte{}, []byte(nil))
@@ -147,7 +165,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("Match", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.Match("", `^$`)
 		t.Match("", `^.*$`)
@@ -161,7 +179,7 @@ func TestCheckers(tt *testing.T) {
 		t.Match(time.Time{}, "00:00:00")
 	})
 	t.Run("NotMatch", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		var err error
 		t.NotMatch(err, "some error")
@@ -173,7 +191,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("Contains", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.Contains("something", "thing")
 		t.Contains("something", myString("thing"))
@@ -185,7 +203,7 @@ func TestCheckers(tt *testing.T) {
 		t.Contains(map[int]string{2: "something", 5: "thing"}, "thing")
 	})
 	t.Run("NotContains", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.NotContains("something", "Thing")
 		t.NotContains("something", myString("Thing"))
@@ -198,20 +216,20 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("HasKey", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.HasKey(map[*testing.T]int{nil: 2, tt: 5}, tt)
 		t.HasKey(map[int]string{2: "something", 5: "thing"}, 5)
 	})
 	t.Run("NotHasKey", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.NotHasKey(map[*testing.T]int{nil: 2, tt: 5}, &testing.T{})
 		t.NotHasKey(map[int]string{2: "something", 5: "thing"}, 0)
 	})
 
 	t.Run("Zero", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.Zero(nil)
 		t.Zero(false)
@@ -237,7 +255,7 @@ func TestCheckers(tt *testing.T) {
 		t.Zero(make([]int, 0, 5))
 	})
 	t.Run("NotZero", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.NotZero(true)
 		t.NotZero(-1)
@@ -256,7 +274,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("Len", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		c := make(chan int, 5)
 		t.Len(c, 0)
@@ -276,7 +294,7 @@ func TestCheckers(tt *testing.T) {
 		t.Len([]rune("тест"), 4)
 	})
 	t.Run("NotLen", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		c := make(chan int, 5)
 		t.NotLen(c, 5)
@@ -297,7 +315,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("Err", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.Err(io.EOF, io.EOF)
 		t.Err(io.EOF, errors.New("EOF"))
@@ -307,7 +325,7 @@ func TestCheckers(tt *testing.T) {
 		t.Err(err, &net.OpError{})
 	})
 	t.Run("NotErr", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		err := (*net.OpError)(nil)
 		t.NotErr(err, nil)
@@ -315,7 +333,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("Panic", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.Panic(func() { panic(nil) })
 		t.Panic(func() { panic("") })
@@ -323,22 +341,22 @@ func TestCheckers(tt *testing.T) {
 		t.Panic(func() { panic(t) })
 	})
 	t.Run("NotPanic", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.NotPanic(func() {})
 	})
 
 	t.Run("PanicMatch", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.PanicMatch(func() { panic(nil) }, "")
 		t.PanicMatch(func() { panic(nil) }, "^<nil>$")
 		t.PanicMatch(func() { panic("") }, regexp.MustCompile("^$"))
 		t.PanicMatch(func() { panic("oops") }, "(?i)Oops")
-		t.PanicMatch(func() { panic(t) }, "^check.T{")
+		t.PanicMatch(func() { panic(t) }, "^&check.C{")
 	})
 	t.Run("PanicNotMatch", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.PanicNotMatch(func() { panic(nil) }, "^$")
 		t.PanicNotMatch(func() { panic(nil) }, "^nil$")
@@ -359,7 +377,7 @@ func TestCheckers(tt *testing.T) {
 		{time1, time1.Add(time.Second)},
 	}
 	t.Run("Less+LT+LessOrEqual+LE", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		for _, v := range less {
 			actual, expected := v.actual, v.expected
@@ -372,7 +390,7 @@ func TestCheckers(tt *testing.T) {
 		}
 	})
 	t.Run("Greater+GT+GreaterOrEqual+GE", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		for _, v := range less {
 			actual, expected := v.expected, v.actual
@@ -397,7 +415,7 @@ func TestCheckers(tt *testing.T) {
 		{time1, time1.Add(time.Millisecond), time1.Add(time.Second)},
 	}
 	t.Run("Between+BetweenOrEqual+NotBetween+NotBetweenOrEqual", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		for _, v := range between {
 			min, mid, max := v.min, v.mid, v.max
@@ -419,7 +437,7 @@ func TestCheckers(tt *testing.T) {
 		{time1, time1.Add(5 * time.Second), 7 * time.Second},
 	}
 	t.Run("InDelta+NotInDelta", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		for _, v := range inDelta {
 			t.InDelta(v.actual, v.expected, v.delta)
@@ -447,7 +465,7 @@ func TestCheckers(tt *testing.T) {
 		{0.92, 1.0, 5},
 	}
 	t.Run("InSMAPE+NotInSMAPE", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		for _, v := range inSMAPE {
 			t.InSMAPE(v.actual, v.expected, v.smape)
@@ -461,7 +479,7 @@ func TestCheckers(tt *testing.T) {
 		{time.Time{}, errors.New("0001-01-01")},
 	}
 	t.Run("HasPrefix+NotHasPrefix", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.HasPrefix("", myString(""))
 		for _, v := range prefix {
@@ -477,7 +495,7 @@ func TestCheckers(tt *testing.T) {
 		{time.Time{}, errors.New("UTC")},
 	}
 	t.Run("HasSuffix+NotHasSuffix", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.HasSuffix("", myString(""))
 		for _, v := range suffix {
@@ -488,7 +506,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("JSONEqual", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		t.JSONEqual(`{ "a" : [3, false],"z":42 }`, []byte(`{"z": 42,"a":[3  ,  false ]}`))
 		t.JSONEqual(`true`, ` true `)
@@ -497,7 +515,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("HasType+NotHasType", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		var reader io.Reader
 		t.HasType(nil, nil)
@@ -520,7 +538,7 @@ func TestCheckers(tt *testing.T) {
 	})
 
 	t.Run("Implements+NotImplements", func(tt *testing.T) {
-		t := check.T{tt}
+		t := check.T(tt)
 		t.Parallel()
 		var reader io.Reader = os.Stdin
 		t.Implements(t, (*testing.TB)(nil))
