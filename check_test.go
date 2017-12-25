@@ -26,7 +26,9 @@ func TestTODO(tt *testing.T) {
 	t.True(true)
 	todo.True(false)
 	t.True(true)
-	todo.True(false)
+	if todo.True(false) {
+		panic("never here")
+	}
 	// If all tests below this point are broken:
 	t = t.TODO()
 	t.True(false)

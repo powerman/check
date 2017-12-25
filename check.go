@@ -59,7 +59,8 @@ func T(tt *testing.T) *C {
 
 // TODO create and return new *C, which have only one difference from
 // original one: every passing check is now handled as failed and vice
-// versa. You can continue using both old and new *C at same time.
+// versa (this doesn't affect boolean value returned by check).
+// You can continue using both old and new *C at same time.
 //
 // Swapping passed/failed gives you ability to temporary mark some failed
 // test as passed. For example, this may be useful to avoid broken builds
@@ -80,7 +81,9 @@ func T(tt *testing.T) *C {
 //		t.True(true)
 //		todo.True(false)
 //		t.True(true)
-//		todo.True(false)
+//		if todo.True(false) {
+//			panic("never here")
+//		}
 //		// If all tests below this point are broken:
 //		t = t.TODO()
 //		t.True(false)
