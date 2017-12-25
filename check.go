@@ -243,10 +243,9 @@ type (
 
 // Should use user-provided check function to do actual check.
 //
-// anyShouldFunc must have type ShouldFunc1 or ShouldFunc2. It should return
-// it's name and true if check was successful. There is no need to call
-// t.Error in anyShouldFunc - this will be done automatically when it
-// returns.
+// anyShouldFunc must have type ShouldFunc1 or ShouldFunc2. It should
+// return true if check was successful. There is no need to call t.Error
+// in anyShouldFunc - this will be done automatically when it returns.
 //
 // args must contain at least 1 element for ShouldFunc1 and at least
 // 2 elements for ShouldFunc2.
