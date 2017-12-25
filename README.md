@@ -56,6 +56,13 @@ To get optional statistics about executed checkers add:
 func TestMain(m *testing.M) { check.TestMain(m) }
 ```
 
+When use goconvey tool, to get nice diff in web UI
+[add](https://github.com/smartystreets/goconvey/issues/513):
+
+```go
+import _ "github.com/smartystreets/goconvey/convey"
+```
+
 ## Installation
 
 Require [Go 1.9](https://golang.org/doc/go1.9#test-helper).
