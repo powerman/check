@@ -1053,3 +1053,55 @@ func jsonify(arg interface{}) json.RawMessage {
 	}
 	return buf
 }
+
+// HasType checks is actual has same type as expected.
+func (t *T) HasType(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if reflect.TypeOf(actual) == reflect.TypeOf(expected) {
+		return pass(t.T)
+	}
+	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+}
+
+// NotHasType checks is actual has not same type as expected.
+func (t *T) NotHasType(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if reflect.TypeOf(actual) != reflect.TypeOf(expected) {
+		return pass(t.T)
+	}
+	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+}
+
+// Implements checks is actual implements interface pointed by expected.
+//
+// You must use pointer to interface type in expected:
+//
+//	t.Implements(os.Stdin, (*io.Reader)(nil))
+func (t *T) Implements(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if isImplements(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+}
+
+func isImplements(actual, expected interface{}) bool {
+	typActual := reflect.TypeOf(actual)
+	if typActual.Kind() != reflect.Ptr {
+		typActual = reflect.PtrTo(typActual)
+	}
+	return typActual.Implements(reflect.TypeOf(expected).Elem())
+}
+
+// NotImplements checks is actual does not implements interface pointed by expected.
+//
+// You must use pointer to interface type in expected:
+//
+//	t.NotImplements(os.Stdin, (*fmt.Stringer)(nil))
+func (t *T) NotImplements(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !isImplements(actual, expected) {
+		return pass(t.T)
+	}
+	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+}

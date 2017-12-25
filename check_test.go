@@ -3,6 +3,7 @@ package check_test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -450,5 +451,43 @@ func TestCheckers(tt *testing.T) {
 		t.JSONEqual(`true`, ` true `)
 		raw := json.RawMessage(`true`)
 		t.JSONEqual(&raw, raw)
+	})
+
+	t.Run("HasType+NotHasType", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		var reader io.Reader
+		t.HasType(nil, nil)
+		t.HasType(reader, nil)
+		t.HasType(false, true)
+		t.HasType(42, 0)
+		t.HasType("test", "")
+		t.HasType([]byte("test"), []byte(nil))
+		t.HasType([]byte("test"), []byte{})
+		t.HasType(&reader, (*io.Reader)(nil))
+		t.HasType(os.Stdin, (*os.File)(nil))
+		t.HasType(new(int), (*int)(nil))
+		t.NotHasType(nil, (*int)(nil))
+		t.NotHasType((*int)(nil), nil)
+		t.NotHasType((*int)(nil), (*uint)(nil))
+		t.NotHasType(&reader, nil)
+		t.NotHasType(42, uint(42))
+		t.NotHasType(0.0, 0)
+		t.NotHasType(json.RawMessage([]byte("test")), []byte{})
+	})
+
+	t.Run("Implements+NotImplements", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		var reader io.Reader = os.Stdin
+		t.Implements(t, (*testing.TB)(nil))
+		t.Implements(os.Stdin, (*io.Reader)(nil))
+		t.Implements(os.Stdin, &reader)
+		t.Implements(*os.Stdin, (*io.Reader)(nil))
+		t.Implements(time.Time{}, (*fmt.Stringer)(nil))
+		t.Implements(&time.Time{}, (*fmt.Stringer)(nil))
+		t.NotImplements(os.Stdin, (*fmt.Stringer)(nil))
+		t.NotImplements(&os.Stdin, (*io.Reader)(nil))
+		t.NotImplements(new(int), (*io.Reader)(nil))
 	})
 }
