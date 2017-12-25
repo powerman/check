@@ -412,6 +412,31 @@ func TestCheckers(tt *testing.T) {
 		}
 	})
 
+	inDelta := []struct{ actual, expected, delta interface{} }{
+		{-1, 0, 1},
+		{byte(92), byte(100), byte(10)},
+		{0.92, 1.0, 0.1},
+		{time1, time1.Add(5 * time.Second), 7 * time.Second},
+	}
+	t.Run("InDelta+NotInDelta", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		for _, v := range inDelta {
+			t.InDelta(v.actual, v.expected, v.delta)
+			t.InDelta(v.expected, v.actual, v.delta)
+			switch delta := v.delta.(type) {
+			case int:
+				t.NotInDelta(v.actual, v.expected, delta/2)
+			case byte:
+				t.NotInDelta(v.actual, v.expected, delta/2)
+			case float64:
+				t.NotInDelta(v.actual, v.expected, delta/2)
+			case time.Duration:
+				t.NotInDelta(v.actual, v.expected, delta/2)
+			}
+		}
+	})
+
 	prefix := []struct{ actual, expected interface{} }{
 		{myString("abcde"), []byte("ab")},
 		{[]rune("abcde"), myString("ab")},

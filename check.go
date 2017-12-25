@@ -920,6 +920,67 @@ func (t *T) NotBetweenOrEqual(actual, min, max interface{}, msg ...interface{}) 
 	})
 }
 
+// InDelta checks for expected-delta <= actual <= expected+delta.
+//
+// All three actual, expected and delta must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - time.Time (in this case delta must be time.Duration)
+func (t *T) InDelta(actual, expected, delta interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if isInDelta(actual, expected, delta) {
+		return pass(t.T)
+	}
+	return t.fail(report{
+		name: []string{"", "", "Delta:"},
+		arg:  []interface{}{actual, expected, delta},
+		msg:  msg,
+	})
+}
+
+func isInDelta(actual, expected, delta interface{}) bool {
+	switch v, e, d := reflect.ValueOf(actual), reflect.ValueOf(expected), reflect.ValueOf(delta); v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		min, max := e.Int()-d.Int(), e.Int()+d.Int()
+		return min <= v.Int() && v.Int() <= max
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		min, max := e.Uint()-d.Uint(), e.Uint()+d.Uint()
+		return min <= v.Uint() && v.Uint() <= max
+	case reflect.Float32, reflect.Float64:
+		min, max := e.Float()-d.Float(), e.Float()+d.Float()
+		return min <= v.Float() && v.Float() <= max
+	default:
+		if actualTime, ok := actual.(time.Time); ok {
+			expectedTime, dur := expected.(time.Time), delta.(time.Duration)
+			minTime, maxTime := expectedTime.Add(-dur), expectedTime.Add(dur)
+			return minTime.Before(actualTime) && actualTime.Before(maxTime) ||
+				actualTime.Equal(minTime) ||
+				actualTime.Equal(maxTime)
+		}
+	}
+	panic("actual is not a number or time.Time")
+}
+
+// NotInDelta checks for actual < expected-delta or expected+delta < actual.
+//
+// All three actual, expected and delta must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//   - time.Time (in this case delta must be time.Duration)
+func (t *T) NotInDelta(actual, expected, delta interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if !isInDelta(actual, expected, delta) {
+		return pass(t.T)
+	}
+	return t.fail(report{
+		name: []string{"", "", "Delta:"},
+		arg:  []interface{}{actual, expected, delta},
+		msg:  msg,
+	})
+}
+
 // HasPrefix checks for strings.HasPrefix(actual, expected).
 //
 // Both actual and expected may have any of these types:
