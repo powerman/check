@@ -1,6 +1,7 @@
 package check_test
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"net"
@@ -440,5 +441,14 @@ func TestCheckers(tt *testing.T) {
 			t.HasSuffix(actual, expected)
 			t.NotHasSuffix(expected, actual)
 		}
+	})
+
+	t.Run("JSONEqual", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		t.JSONEqual(`{ "a" : [3, false],"z":42 }`, []byte(`{"z": 42,"a":[3  ,  false ]}`))
+		t.JSONEqual(`true`, ` true `)
+		raw := json.RawMessage(`true`)
+		t.JSONEqual(&raw, raw)
 	})
 }

@@ -53,15 +53,3 @@ func format(msg ...interface{}) string {
 	}
 	return fmt.Sprint(msg...)
 }
-
-// TODO Use in future checks.
-// func normJSON(s string) string {
-// 	var v interface{}
-// 	if json.Unmarshal([]byte(s), &v) != nil {
-// 		return s
-// 	}
-// 	if b, err := json.MarshalIndent(v, "", "  "); err == nil {
-// 		return string(b)
-// 	}
-// 	return s
-// }

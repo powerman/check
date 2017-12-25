@@ -2,6 +2,7 @@ package check
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -10,7 +11,10 @@ import (
 	"time"
 )
 
-var typString = reflect.TypeOf("")
+var (
+	typString = reflect.TypeOf("")
+	typBytes  = reflect.TypeOf([]byte(nil))
+)
 
 // T wraps *testing.T to make it convenient to call checkers in test.
 //
@@ -990,4 +994,62 @@ func (t *T) NotHasSuffix(actual, expected interface{}, msg ...interface{}) bool 
 		return pass(t.T)
 	}
 	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+}
+
+// JSONEqual normalize formatting of actual and expected (if they're valid
+// JSON) and then checks for bytes.Equal(actual, expected).
+//
+// Both actual and expected may have any of these types:
+//   - string
+//   - []byte
+//   - json.RawMessage
+//   - *json.RawMessage
+//   - nil
+//
+// In case any of actual or expected is nil, "" or (for string, []byte or
+// []rune) is invalid JSON - check will fail.
+func (t *T) JSONEqual(actual, expected interface{}, msg ...interface{}) bool {
+	t.Helper()
+	if isJSONEqual(actual, expected) {
+		return pass(t.T)
+	}
+	if buf := jsonify(actual); len(buf) != 0 {
+		actual = buf
+	}
+	if buf := jsonify(expected); len(buf) != 0 {
+		expected = buf
+	}
+	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+}
+
+func isJSONEqual(actual, expected interface{}) bool {
+	jsonActual, jsonExpected := jsonify(actual), jsonify(expected)
+	return len(jsonActual) != 0 && len(jsonExpected) != 0 &&
+		bytes.Equal(jsonActual, jsonExpected)
+}
+
+func jsonify(arg interface{}) json.RawMessage {
+	switch v := (arg).(type) {
+	case nil:
+		return nil
+	case json.RawMessage:
+		return v
+	case *json.RawMessage:
+		if v == nil {
+			return nil
+		}
+		return *v
+	}
+	buf := reflect.ValueOf(arg).Convert(typBytes).Interface().([]byte)
+
+	var v interface{}
+	err := json.Unmarshal(buf, &v)
+	if err != nil {
+		return nil
+	}
+	buf, err = json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return nil
+	}
+	return buf
 }
