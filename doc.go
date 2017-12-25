@@ -98,4 +98,45 @@
 //
 // ★ It will panic when called with arg of wrong type - because this means
 // bug in your test.
+//
+// Contents
+//
+// There are few special functions (assertions and custom checkers).
+//
+//	Must
+//	Should
+//
+// Everything else are just trivial (mostly) checkers which works in
+// obvious way and accept values of any types which makes sense (and
+// panics on everything else).
+//
+//	Nil             NotNil
+//	Zero            NotZero
+//	True            False
+//
+//	Equal           NotEqual           EQ  NE
+//	DeepEqual       NotDeepEqual
+//	Err             NotErr
+//	BytesEqual      NotBytesEqual
+//	JSONEqual
+//
+//	Greater         LessOrEqual        GT  LE
+//	Less            GreaterOrEqual     LT  GE
+//	Between         NotBetween
+//	BetweenOrEqual  NotBetweenOrEqual
+//	InDelta         NotInDelta
+//	InSMAPE         NotInSMAPE
+//
+//	Len             NotLen
+//	Match           NotMatch
+//	HasPrefix       NotHasPrefix
+//	HasSuffix       NotHasSuffix
+//	HasKey          NotHasKey
+//	Contains        NotContains
+//
+//	HasType         NotHasType
+//	Implements      NotImplements
+//
+//	Panic           NotPanic
+//	PanicMatch      PanicNotMatch
 package check
