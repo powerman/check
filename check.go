@@ -97,7 +97,7 @@ func (t *C) report(ok bool, msg []interface{}, checker string, name []string, ar
 	t.Helper()
 
 	if ok != t.todo {
-		pass(t.T)
+		pass(t)
 		return ok
 	}
 
@@ -133,7 +133,7 @@ func (t *C) report(ok bool, msg []interface{}, checker string, name []string, ar
 		t.Errorf("%s\n", failure)
 	}
 
-	fail(t.T)
+	fail(t)
 	return ok
 }
 

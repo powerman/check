@@ -11,14 +11,22 @@ import (
 type counter struct {
 	name   string
 	passed int
+	forged int
 	failed int
 	force  bool
 }
 
 func (c counter) report() {
-	var passed, failed string
+	var passed, forged, failed string
 	if c.passed != 0 || c.force {
 		passed = fmt.Sprintf("%s%3d passed%s", ansiGreen, c.passed, ansiReset)
+	}
+	if c.forged != 0 || c.force {
+		color := ansiYellow
+		if c.forged == 0 {
+			color = ansiReset
+		}
+		forged = fmt.Sprintf("%s%2d todo%s", color, c.forged, ansiReset)
 	}
 	if c.failed != 0 || c.force {
 		color := ansiRed
@@ -27,7 +35,7 @@ func (c counter) report() {
 		}
 		failed = fmt.Sprintf("%s%3d failed%s", color, c.failed, ansiReset)
 	}
-	fmt.Printf("  checks:  %10s  %10s\t%s\n", passed, failed, c.name)
+	fmt.Printf("  checks:  %10s  %7s  %10s\t%s\n", passed, forged, failed, c.name)
 }
 
 var stats = struct {
@@ -57,6 +65,7 @@ func Report() {
 	sort.Slice(ts, func(a, b int) bool { return ts[a].Name() < ts[b].Name() })
 	for _, t := range ts {
 		total.passed += stats.counter[t].passed
+		total.forged += stats.counter[t].forged
 		total.failed += stats.counter[t].failed
 		if testing.Verbose() {
 			stats.counter[t].report()
@@ -75,22 +84,26 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func pass(t *testing.T) {
+func pass(t *C) {
 	stats.Lock()
 	defer stats.Unlock()
 
-	if stats.counter[t] == nil {
-		stats.counter[t] = &counter{name: t.Name()}
+	if stats.counter[t.T] == nil {
+		stats.counter[t.T] = &counter{name: t.Name()}
 	}
-	stats.counter[t].passed++
+	if t.todo {
+		stats.counter[t.T].forged++
+	} else {
+		stats.counter[t.T].passed++
+	}
 }
 
-func fail(t *testing.T) {
+func fail(t *C) {
 	stats.Lock()
 	defer stats.Unlock()
 
-	if stats.counter[t] == nil {
-		stats.counter[t] = &counter{name: t.Name()}
+	if stats.counter[t.T] == nil {
+		stats.counter[t.T] = &counter{name: t.Name()}
 	}
-	stats.counter[t].failed++
+	stats.counter[t.T].failed++
 }
