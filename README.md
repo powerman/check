@@ -1,9 +1,13 @@
 # check [![GoDoc](https://godoc.org/github.com/powerman/check?status.svg)](http://godoc.org/github.com/powerman/check) [![Go Report Card](https://goreportcard.com/badge/github.com/powerman/check)](https://goreportcard.com/report/github.com/powerman/check) [![CircleCI](https://circleci.com/gh/powerman/check.svg?style=svg)](https://circleci.com/gh/powerman/check)
 
-Checkers for use with Go [testing](https://golang.org/pkg/testing/)
-package
-([testify/assert](https://godoc.org/github.com/test-go/testify/assert)
-done right).
+Helpers to complement Go [testing](https://golang.org/pkg/testing/)
+package.
+
+Write tests with ease and fun!
+
+This package is like
+[testify/assert](https://godoc.org/github.com/test-go/testify/assert)
+on steroids. :)
 
 ## Features
 
@@ -17,6 +21,7 @@ done right).
 - 100% compatible with testing package - check package just provide
   convenient wrappers for `*testing.T` methods and doesn't introduce new
   concepts like BDD, custom test suite or unusual execution flow.
+- All checks you may ever need! :)
 - Very easy to add your own check functions.
 - Concise, handy and consistent API, without dot-import!
 

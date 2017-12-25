@@ -1,5 +1,9 @@
 // Package check provide helpers to complement Go testing package.
 //
+// Write tests with ease and fun!
+//
+// This package is like testify/assert on steroids. :)
+//
 // Features
 //
 //   - Compelling output from failed tests:
@@ -11,6 +15,7 @@
 //   - 100% compatible with testing package - check package just provide
 //     convenient wrappers for *testing.T methods and doesn't introduce
 //     new concepts like BDD, custom test suite or unusual execution flow.
+//   - All checks you may ever need! :)
 //   - Very easy to add your own check functions.
 //   - Concise, handy and consistent API, without dot-import!
 //
