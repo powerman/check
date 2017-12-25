@@ -437,6 +437,24 @@ func TestCheckers(tt *testing.T) {
 		}
 	})
 
+	inSMAPE := []struct {
+		actual, expected interface{}
+		smape            float64
+	}{
+		{-101, -100, 0.5},
+		{-99, -100, 0.7},
+		{byte(92), byte(100), 5},
+		{0.92, 1.0, 5},
+	}
+	t.Run("InSMAPE+NotInSMAPE", func(tt *testing.T) {
+		t := check.T{tt}
+		t.Parallel()
+		for _, v := range inSMAPE {
+			t.InSMAPE(v.actual, v.expected, v.smape)
+			t.NotInSMAPE(v.actual, v.expected, v.smape/2)
+		}
+	})
+
 	prefix := []struct{ actual, expected interface{} }{
 		{myString("abcde"), []byte("ab")},
 		{[]rune("abcde"), myString("ab")},

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"regexp"
 	"strings"
@@ -12,8 +13,9 @@ import (
 )
 
 var (
-	typString = reflect.TypeOf("")
-	typBytes  = reflect.TypeOf([]byte(nil))
+	typString  = reflect.TypeOf("")
+	typBytes   = reflect.TypeOf([]byte(nil))
+	typFloat64 = reflect.TypeOf(0.0)
 )
 
 // T wraps *testing.T to make it convenient to call checkers in test.
@@ -977,6 +979,68 @@ func (t *T) NotInDelta(actual, expected, delta interface{}, msg ...interface{}) 
 	return t.fail(report{
 		name: []string{"", "", "Delta:"},
 		arg:  []interface{}{actual, expected, delta},
+		msg:  msg,
+	})
+}
+
+// InSMAPE checks that actual and expected have a symmetric mean absolute
+// percentage error (SMAPE) is less than given smape.
+//
+// Both actual and expected must be either:
+//   - signed integers
+//   - unsigned integers
+//   - floats
+//
+// Allowed smape values are: 0.0 < smape < 100.0.
+//
+// Used formula returns SMAPE value between 0 and 100 (percents):
+//   - 0.0   when actual == expected
+//   - ~0.5  when they differs in ~1%
+//   - ~5    when they differs in ~10%
+//   - ~20   when they differs in 1.5 times
+//   - ~33   when they differs in 2 times
+//   - 50.0  when they differs in 3 times
+//   - ~82   when they differs in 10 times
+//   - 99.0+ when actual and expected differs in 200+ times
+//   - 100.0 when only one of actual or expected is 0 or one of them is
+//           positive while another is negative
+func (t *T) InSMAPE(actual, expected interface{}, smape float64, msg ...interface{}) bool {
+	t.Helper()
+	if isInSMAPE(actual, expected, smape) {
+		return pass(t.T)
+	}
+	return t.fail(report{
+		name: []string{"", "", "SMAPE:"},
+		arg:  []interface{}{actual, expected, smape},
+		msg:  msg,
+	})
+}
+
+func isInSMAPE(actual, expected interface{}, smape float64) bool {
+	if !(0 < smape && smape < 100) {
+		panic("smape is not in allowed range: 0 < smape < 100")
+	}
+	a := reflect.ValueOf(actual).Convert(typFloat64).Float()
+	e := reflect.ValueOf(expected).Convert(typFloat64).Float()
+	if a == 0 && e == 0 {
+		return true // avoid division by zero in legal use case
+	}
+	return 100*math.Abs(e-a)/(math.Abs(e)+math.Abs(a)) < smape
+}
+
+// NotInSMAPE checks that actual and expected have a symmetric mean
+// absolute percentage error (SMAPE) is greater than or equal to given
+// smape.
+//
+// See InSMAPE about supported actual/expected types and check logic.
+func (t *T) NotInSMAPE(actual, expected interface{}, smape float64, msg ...interface{}) bool {
+	t.Helper()
+	if !isInSMAPE(actual, expected, smape) {
+		return pass(t.T)
+	}
+	return t.fail(report{
+		name: []string{"", "", "SMAPE:"},
+		arg:  []interface{}{actual, expected, smape},
 		msg:  msg,
 	})
 }
