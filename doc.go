@@ -101,10 +101,11 @@
 //
 // Contents
 //
-// There are few special functions (assertions and custom checkers).
+// There are few special functions (assertion, custom checkers, etc.).
 //
 //	Must
 //	Should
+//	TODO
 //
 // Everything else are just trivial (mostly) checkers which works in
 // obvious way and accept values of any types which makes sense (and
