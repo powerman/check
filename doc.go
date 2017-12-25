@@ -1,10 +1,8 @@
 // Package check provide helpers to complement Go testing package.
 //
-// Write tests with ease and fun!
+// Features
 //
 // This package is like testify/assert on steroids. :)
-//
-// Features
 //
 //   - Compelling output from failed tests:
 //     - Very easy-to-read dumps for expected and actual values.
