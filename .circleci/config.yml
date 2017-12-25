@@ -1,10 +1,15 @@
 version: 2
 jobs:
-  build:
-    docker:
-      - image: circleci/golang:1.9
-    working_directory: /go/src/github.com/powerman/check
-    steps:
-      - checkout
-      - run: go get -v -t -d ./...
-      - run: go test -v ./...
+    build:
+        docker:
+            - image: circleci/golang:1.9
+        working_directory: /go/src/github.com/powerman/check
+        steps:
+            - checkout
+            - run: go get -v -t -d ./...
+            - run: go test -v -race ./...
+            - run:
+                name: Report coverage
+                command: |
+                    go get -v github.com/mattn/goveralls
+                    goveralls -service=circle-ci
