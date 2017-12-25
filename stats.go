@@ -83,27 +83,3 @@ func TestMain(m *testing.M) {
 	Report()
 	os.Exit(code)
 }
-
-func pass(t *C) {
-	stats.Lock()
-	defer stats.Unlock()
-
-	if stats.counter[t.T] == nil {
-		stats.counter[t.T] = &counter{name: t.Name()}
-	}
-	if t.todo {
-		stats.counter[t.T].forged++
-	} else {
-		stats.counter[t.T].passed++
-	}
-}
-
-func fail(t *C) {
-	stats.Lock()
-	defer stats.Unlock()
-
-	if stats.counter[t.T] == nil {
-		stats.counter[t.T] = &counter{name: t.Name()}
-	}
-	stats.counter[t.T].failed++
-}

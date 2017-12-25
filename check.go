@@ -93,11 +93,35 @@ func (t *C) TODO() *C {
 	return &C{T: t.T, todo: true}
 }
 
+func (t *C) pass() {
+	stats.Lock()
+	defer stats.Unlock()
+
+	if stats.counter[t.T] == nil {
+		stats.counter[t.T] = &counter{name: t.Name()}
+	}
+	if t.todo {
+		stats.counter[t.T].forged++
+	} else {
+		stats.counter[t.T].passed++
+	}
+}
+
+func (t *C) fail() {
+	stats.Lock()
+	defer stats.Unlock()
+
+	if stats.counter[t.T] == nil {
+		stats.counter[t.T] = &counter{name: t.Name()}
+	}
+	stats.counter[t.T].failed++
+}
+
 func (t *C) report(ok bool, msg []interface{}, checker string, name []string, args []interface{}) bool {
 	t.Helper()
 
 	if ok != t.todo {
-		pass(t)
+		t.pass()
 		return ok
 	}
 
@@ -133,7 +157,7 @@ func (t *C) report(ok bool, msg []interface{}, checker string, name []string, ar
 		t.Errorf("%s\n", failure)
 	}
 
-	fail(t)
+	t.fail()
 	return ok
 }
 
