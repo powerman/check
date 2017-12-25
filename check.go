@@ -31,16 +31,9 @@ type T struct {
 	*testing.T
 }
 
-type report struct {
-	checker string
-	name    []string
-	arg     []interface{}
-	msg     []interface{}
-}
-
 const (
-	nameActual   = "Actual:"
-	nameExpected = "Expected:"
+	nameActual   = "Actual"
+	nameExpected = "Expected"
 )
 
 // Parallel implements an internal workaround which have no visible
@@ -56,46 +49,33 @@ func (t *T) Parallel() {
 	}
 }
 
-func (t *T) fail(r report) bool {
+func (t *T) report(ok bool, msg []interface{}, checker string, name []string, args []interface{}) bool {
 	t.Helper()
-	if r.checker == "" {
-		r.checker = callerFuncName(1)
-	}
-	for len(r.name) < len(r.arg) {
-		r.name = append(r.name, "")
-	}
-	for i := range r.name {
-		if r.name[i] == "" {
-			switch i {
-			case 0:
-				r.name[i] = nameActual
-			case 1:
-				r.name[i] = nameExpected
-			default:
-				r.name[i] = fmt.Sprintf("Arg%d:", i+1)
-			}
-		}
+
+	if ok {
+		pass(t.T)
+		return ok
 	}
 
-	dump := make([]dump, 0, len(r.arg))
-	for _, arg := range r.arg {
+	dump := make([]dump, 0, len(args))
+	for _, arg := range args {
 		dump = append(dump, newDump(arg))
 	}
 
 	failure := new(bytes.Buffer)
 	fmt.Fprintf(failure, "%s\nChecker:  %s%s%s\n",
-		format(r.msg...),
-		ansiYellow, r.checker, ansiReset,
+		format(msg...),
+		ansiYellow, checker, ansiReset,
 	)
 
-	wantDiff := len(dump) == 2 && r.name[0] == nameActual && r.name[1] == nameExpected
+	wantDiff := len(dump) == 2 && name[0] == nameActual && name[1] == nameExpected
 	if wantDiff && reportToGoConvey(dump[0], dump[1], failure) == nil {
 		t.Fail()
 	} else {
 		// Reverse order to show Actual: last.
 		for i := len(dump) - 1; i >= 0; i-- {
-			fmt.Fprintf(failure, "%-10s", r.name[i])
-			switch r.name[i] {
+			fmt.Fprintf(failure, "%-10s", name[i]+":")
+			switch name[i] {
 			case nameActual:
 				fmt.Fprint(failure, ansiRed)
 			default:
@@ -109,7 +89,68 @@ func (t *T) fail(r report) bool {
 		t.Errorf("%s\n", failure)
 	}
 
-	return fail(t.T)
+	fail(t.T)
+	return ok
+}
+
+func (t *T) reportShould1(funcName string, actual interface{}, msg []interface{}, ok bool) bool {
+	t.Helper()
+	return t.report(ok, msg,
+		"Should "+funcName,
+		[]string{nameActual},
+		[]interface{}{actual})
+}
+
+func (t *T) reportShould2(funcName string, actual, expected interface{}, msg []interface{}, ok bool) bool {
+	t.Helper()
+	return t.report(ok, msg,
+		"Should "+funcName,
+		[]string{nameActual, nameExpected},
+		[]interface{}{actual, expected})
+}
+
+func (t *T) report0(msg []interface{}, ok bool) bool {
+	t.Helper()
+	return t.report(ok, msg,
+		callerFuncName(1),
+		[]string{},
+		[]interface{}{})
+}
+
+func (t *T) report1(actual interface{}, msg []interface{}, ok bool) bool {
+	t.Helper()
+	return t.report(ok, msg,
+		callerFuncName(1),
+		[]string{nameActual},
+		[]interface{}{actual})
+}
+
+func (t *T) report2(actual, expected interface{}, msg []interface{}, ok bool) bool {
+	t.Helper()
+	checker, arg2Name := callerFuncName(1), nameExpected
+	if strings.Contains(checker, "Match") {
+		arg2Name = "Regex"
+	}
+	return t.report(ok, msg,
+		checker,
+		[]string{nameActual, arg2Name},
+		[]interface{}{actual, expected})
+}
+
+func (t *T) report3(actual, expected1, expected2 interface{}, msg []interface{}, ok bool) bool {
+	t.Helper()
+	checker, arg2Name, arg3Name := callerFuncName(1), "arg1", "arg2"
+	if strings.Contains(checker, "Between") {
+		arg2Name, arg3Name = "Min", "Max"
+	} else if strings.Contains(checker, "Delta") {
+		arg2Name, arg3Name = nameExpected, "Delta"
+	} else if strings.Contains(checker, "SMAPE") {
+		arg2Name, arg3Name = nameExpected, "SMAPE"
+	}
+	return t.report(ok, msg,
+		checker,
+		[]string{nameActual, arg2Name, arg3Name},
+		[]interface{}{actual, expected1, expected2})
 }
 
 // Must interrupt test using t.FailNow if called with false value.
@@ -117,13 +158,12 @@ func (t *T) fail(r report) bool {
 // This provides easy way to turn any check into assertion:
 //
 //   t.Must(t.Nil(err))
-func (t *T) Must(continueTest bool) {
+func (t *T) Must(continueTest bool, msg ...interface{}) {
 	t.Helper()
+	t.report0(msg, continueTest)
 	if !continueTest {
-		t.fail(report{})
 		t.FailNow()
 	}
-	pass(t.T)
 }
 
 type (
@@ -171,14 +211,8 @@ func (t *T) should1(f ShouldFunc1, args ...interface{}) bool {
 		panic("not enough params for " + funcName(f))
 	}
 	actual, msg := args[0], args[1:]
-	if f(t, actual) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		checker: "Should " + funcName(f),
-		arg:     []interface{}{actual},
-		msg:     msg,
-	})
+	return t.reportShould1(funcName(f), actual, msg,
+		f(t, actual))
 }
 
 func (t *T) should2(f ShouldFunc2, args ...interface{}) bool {
@@ -187,14 +221,8 @@ func (t *T) should2(f ShouldFunc2, args ...interface{}) bool {
 		panic("not enough params for " + funcName(f))
 	}
 	actual, expected, msg := args[0], args[1], args[2:]
-	if f(t, actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		checker: "Should " + funcName(f),
-		arg:     []interface{}{actual, expected},
-		msg:     msg,
-	})
+	return t.reportShould2(funcName(f), actual, expected, msg,
+		f(t, actual, expected))
 }
 
 // Nil checks for actual == nil.
@@ -233,10 +261,8 @@ func (t *T) should2(f ShouldFunc2, args ...interface{}) bool {
 // this behaviour undefined, because it may change in the future.
 func (t *T) Nil(actual interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isNil(actual) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual}, msg: msg})
+	return t.report1(actual, msg,
+		isNil(actual))
 }
 
 func isNil(actual interface{}) bool {
@@ -249,10 +275,8 @@ func isNil(actual interface{}) bool {
 // See Nil about subtle case in check logic.
 func (t *T) NotNil(actual interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isNil(actual) {
-		return pass(t.T)
-	}
-	return t.fail(report{msg: msg})
+	return t.report0(msg,
+		!isNil(actual))
 }
 
 // True checks for cond == true.
@@ -266,19 +290,15 @@ func (t *T) NotNil(actual interface{}, msg ...interface{}) bool {
 //	}
 func (t *T) True(cond bool, msg ...interface{}) bool {
 	t.Helper()
-	if cond {
-		return pass(t.T)
-	}
-	return t.fail(report{msg: msg})
+	return t.report0(msg,
+		cond)
 }
 
 // False checks for cond == false.
 func (t *T) False(cond bool, msg ...interface{}) bool {
 	t.Helper()
-	if !cond {
-		return pass(t.T)
-	}
-	return t.fail(report{msg: msg})
+	return t.report0(msg,
+		!cond)
 }
 
 // Equal checks for actual == expected.
@@ -286,10 +306,8 @@ func (t *T) False(cond bool, msg ...interface{}) bool {
 // Note: For time.Time it uses actual.Equal(expected) instead.
 func (t *T) Equal(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isEqual(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		isEqual(actual, expected))
 }
 
 func isEqual(actual, expected interface{}) bool {
@@ -309,10 +327,8 @@ func (t *T) EQ(actual, expected interface{}, msg ...interface{}) bool {
 // NotEqual checks for actual != expected.
 func (t *T) NotEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isEqual(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		!isEqual(actual, expected))
 }
 
 // NE is a synonym for NotEqual.
@@ -326,10 +342,8 @@ func (t *T) NE(actual, expected interface{}, msg ...interface{}) bool {
 // Hint: BytesEqual([]byte{}, []byte(nil)) is true (unlike DeepEqual).
 func (t *T) BytesEqual(actual, expected []byte, msg ...interface{}) bool {
 	t.Helper()
-	if bytes.Equal(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		bytes.Equal(actual, expected))
 }
 
 // NotBytesEqual checks for !bytes.Equal(actual, expected).
@@ -337,28 +351,22 @@ func (t *T) BytesEqual(actual, expected []byte, msg ...interface{}) bool {
 // Hint: NotBytesEqual([]byte{}, []byte(nil)) is false (unlike NotDeepEqual).
 func (t *T) NotBytesEqual(actual, expected []byte, msg ...interface{}) bool {
 	t.Helper()
-	if !bytes.Equal(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual}, msg: msg})
+	return t.report1(actual, msg,
+		!bytes.Equal(actual, expected))
 }
 
 // DeepEqual checks for reflect.DeepEqual(actual, expected).
 func (t *T) DeepEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if reflect.DeepEqual(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		reflect.DeepEqual(actual, expected))
 }
 
 // NotDeepEqual checks for !reflect.DeepEqual(actual, expected).
 func (t *T) NotDeepEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !reflect.DeepEqual(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual}, msg: msg})
+	return t.report1(actual, msg,
+		!reflect.DeepEqual(actual, expected))
 }
 
 // Match checks for regex.MatchString(actual).
@@ -374,14 +382,9 @@ func (t *T) NotDeepEqual(actual, expected interface{}, msg ...interface{}) bool 
 //   - nil          - will not match (even with empty regex)
 func (t *T) Match(actual, regex interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isMatch(&actual, regex) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "Regex:"},
-		arg:  []interface{}{actual, regex},
-		msg:  msg,
-	})
+	ok := isMatch(&actual, regex)
+	return t.report2(actual, regex, msg,
+		ok)
 }
 
 // isMatch updates actual to be a real string used for matching, to make
@@ -420,14 +423,9 @@ func stringify(arg *interface{}) bool {
 // See Match about supported actual/regex types and check logic.
 func (t *T) NotMatch(actual, regex interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isMatch(&actual, regex) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "Regex:"},
-		arg:  []interface{}{actual, regex},
-		msg:  msg,
-	})
+	ok := !isMatch(&actual, regex)
+	return t.report2(actual, regex, msg,
+		ok)
 }
 
 // Contains checks is actual contains substring/element expected.
@@ -444,10 +442,8 @@ func (t *T) NotMatch(actual, regex interface{}, msg ...interface{}) bool {
 // use HasKey instead.
 func (t *T) Contains(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isContains(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		isContains(actual, expected))
 }
 
 func isContains(actual, expected interface{}) (found bool) {
@@ -489,19 +485,15 @@ func isContains(actual, expected interface{}) (found bool) {
 // See Contains about supported actual/expected types and check logic.
 func (t *T) NotContains(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isContains(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		!isContains(actual, expected))
 }
 
 // HasKey checks is actual has key expected.
 func (t *T) HasKey(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if hasKey(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		hasKey(actual, expected))
 }
 
 func hasKey(actual, expected interface{}) bool {
@@ -511,19 +503,15 @@ func hasKey(actual, expected interface{}) bool {
 // NotHasKey checks is actual has no key expected.
 func (t *T) NotHasKey(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !hasKey(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		!hasKey(actual, expected))
 }
 
 // Zero checks is actual is zero value of it's type.
 func (t *T) Zero(actual interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isZero(actual) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual}, msg: msg})
+	return t.report1(actual, msg,
+		isZero(actual))
 }
 
 func isZero(actual interface{}) bool {
@@ -545,30 +533,24 @@ func isZero(actual interface{}) bool {
 // NotZero checks is actual is not zero value of it's type.
 func (t *T) NotZero(actual interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isZero(actual) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual}, msg: msg})
+	return t.report1(actual, msg,
+		!isZero(actual))
 }
 
 // Len checks is len(actual) == expected.
 func (t *T) Len(actual interface{}, expected int, msg ...interface{}) bool {
 	t.Helper()
 	l := reflect.ValueOf(actual).Len()
-	if l == expected {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{l, expected}, msg: msg})
+	return t.report2(l, expected, msg,
+		l == expected)
 }
 
 // NotLen checks is len(actual) != expected.
 func (t *T) NotLen(actual interface{}, expected int, msg ...interface{}) bool {
 	t.Helper()
 	l := reflect.ValueOf(actual).Len()
-	if l != expected {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{l, expected}, msg: msg})
+	return t.report2(l, expected, msg,
+		l != expected)
 }
 
 // Err checks is actual error is the same as expected error.
@@ -578,10 +560,8 @@ func (t *T) NotLen(actual interface{}, expected int, msg ...interface{}) bool {
 // Checking for nil is okay, but using Nil(actual) instead is more clean.
 func (t *T) Err(actual, expected error, msg ...interface{}) bool {
 	t.Helper()
-	if fmt.Sprintf("%#v", actual) == fmt.Sprintf("%#v", expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		fmt.Sprintf("%#v", actual) == fmt.Sprintf("%#v", expected))
 }
 
 // NotErr checks is actual error is not the same as expected error.
@@ -591,10 +571,8 @@ func (t *T) Err(actual, expected error, msg ...interface{}) bool {
 // same error, and so is both nil.
 func (t *T) NotErr(actual, expected error, msg ...interface{}) bool {
 	t.Helper()
-	if fmt.Sprintf("%#v", actual) != fmt.Sprintf("%#v", expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual}, msg: msg})
+	return t.report1(actual, msg,
+		fmt.Sprintf("%#v", actual) != fmt.Sprintf("%#v", expected))
 }
 
 // Panic checks is actual() panics.
@@ -608,10 +586,8 @@ func (t *T) Panic(actual func(), msg ...interface{}) bool {
 		actual()
 		didPanic = false
 	}()
-	if didPanic {
-		return pass(t.T)
-	}
-	return t.fail(report{msg: msg})
+	return t.report0(msg,
+		didPanic)
 }
 
 // NotPanic checks is actual() don't panics.
@@ -625,10 +601,8 @@ func (t *T) NotPanic(actual func(), msg ...interface{}) bool {
 		actual()
 		didPanic = false
 	}()
-	if !didPanic {
-		return pass(t.T)
-	}
-	return t.fail(report{msg: msg})
+	return t.report0(msg,
+		!didPanic)
 }
 
 // PanicMatch checks is actual() panics and panic text match regex.
@@ -646,7 +620,8 @@ func (t *T) PanicMatch(actual func(), regex interface{}, msg ...interface{}) boo
 		didPanic = false
 	}()
 	if !didPanic {
-		return t.fail(report{msg: msg})
+		return t.report0(msg,
+			false)
 	}
 
 	switch panicVal.(type) {
@@ -655,14 +630,9 @@ func (t *T) PanicMatch(actual func(), regex interface{}, msg ...interface{}) boo
 		panicVal = fmt.Sprintf("%#v", panicVal)
 	}
 
-	if isMatch(&panicVal, regex) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "Regex:"},
-		arg:  []interface{}{panicVal, regex},
-		msg:  msg,
-	})
+	ok := isMatch(&panicVal, regex)
+	return t.report2(panicVal, regex, msg,
+		ok)
 }
 
 // PanicNotMatch checks is actual() panics and panic text not match regex.
@@ -680,7 +650,8 @@ func (t *T) PanicNotMatch(actual func(), regex interface{}, msg ...interface{}) 
 		didPanic = false
 	}()
 	if !didPanic {
-		return t.fail(report{msg: msg})
+		return t.report0(msg,
+			false)
 	}
 
 	switch panicVal.(type) {
@@ -689,14 +660,9 @@ func (t *T) PanicNotMatch(actual func(), regex interface{}, msg ...interface{}) 
 		panicVal = fmt.Sprintf("%#v", panicVal)
 	}
 
-	if !isMatch(&panicVal, regex) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "Regex:"},
-		arg:  []interface{}{panicVal, regex},
-		msg:  msg,
-	})
+	ok := !isMatch(&panicVal, regex)
+	return t.report2(panicVal, regex, msg,
+		ok)
 }
 
 // Less checks for actual < expected.
@@ -709,10 +675,8 @@ func (t *T) PanicNotMatch(actual func(), regex interface{}, msg ...interface{}) 
 //   - time.Time
 func (t *T) Less(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isLess(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		isLess(actual, expected))
 }
 
 func isLess(actual, expected interface{}) bool {
@@ -749,10 +713,8 @@ func (t *T) LT(actual, expected interface{}, msg ...interface{}) bool {
 //   - time.Time
 func (t *T) LessOrEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isGreater(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		!isGreater(actual, expected))
 }
 
 func isGreater(actual, expected interface{}) bool {
@@ -789,10 +751,8 @@ func (t *T) LE(actual, expected interface{}, msg ...interface{}) bool {
 //   - time.Time
 func (t *T) Greater(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isGreater(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		isGreater(actual, expected))
 }
 
 // GT is a synonym for Greater.
@@ -811,10 +771,8 @@ func (t *T) GT(actual, expected interface{}, msg ...interface{}) bool {
 //   - time.Time
 func (t *T) GreaterOrEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isLess(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		!isLess(actual, expected))
 }
 
 // GE is a synonym for GreaterOrEqual.
@@ -833,14 +791,8 @@ func (t *T) GE(actual, expected interface{}, msg ...interface{}) bool {
 //   - time.Time
 func (t *T) Between(actual, min, max interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isBetween(actual, min, max) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "Min:", "Max:"},
-		arg:  []interface{}{actual, min, max},
-		msg:  msg,
-	})
+	return t.report3(actual, min, max, msg,
+		isBetween(actual, min, max))
 }
 
 func isBetween(actual, min, max interface{}) bool {
@@ -872,14 +824,8 @@ func isBetween(actual, min, max interface{}) bool {
 //   - time.Time
 func (t *T) NotBetween(actual, min, max interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isBetween(actual, min, max) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "Min:", "Max:"},
-		arg:  []interface{}{actual, min, max},
-		msg:  msg,
-	})
+	return t.report3(actual, min, max, msg,
+		!isBetween(actual, min, max))
 }
 
 // BetweenOrEqual checks for min <= actual <= max.
@@ -892,14 +838,8 @@ func (t *T) NotBetween(actual, min, max interface{}, msg ...interface{}) bool {
 //   - time.Time
 func (t *T) BetweenOrEqual(actual, min, max interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isBetween(actual, min, max) || isEqual(actual, min) || isEqual(actual, max) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "Min:", "Max:"},
-		arg:  []interface{}{actual, min, max},
-		msg:  msg,
-	})
+	return t.report3(actual, min, max, msg,
+		isBetween(actual, min, max) || isEqual(actual, min) || isEqual(actual, max))
 }
 
 // NotBetweenOrEqual checks for actual < min or max < actual.
@@ -912,14 +852,8 @@ func (t *T) BetweenOrEqual(actual, min, max interface{}, msg ...interface{}) boo
 //   - time.Time
 func (t *T) NotBetweenOrEqual(actual, min, max interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !(isBetween(actual, min, max) || isEqual(actual, min) || isEqual(actual, max)) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "Min:", "Max:"},
-		arg:  []interface{}{actual, min, max},
-		msg:  msg,
-	})
+	return t.report3(actual, min, max, msg,
+		!(isBetween(actual, min, max) || isEqual(actual, min) || isEqual(actual, max)))
 }
 
 // InDelta checks for expected-delta <= actual <= expected+delta.
@@ -931,14 +865,8 @@ func (t *T) NotBetweenOrEqual(actual, min, max interface{}, msg ...interface{}) 
 //   - time.Time (in this case delta must be time.Duration)
 func (t *T) InDelta(actual, expected, delta interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isInDelta(actual, expected, delta) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "", "Delta:"},
-		arg:  []interface{}{actual, expected, delta},
-		msg:  msg,
-	})
+	return t.report3(actual, expected, delta, msg,
+		isInDelta(actual, expected, delta))
 }
 
 func isInDelta(actual, expected, delta interface{}) bool {
@@ -973,14 +901,8 @@ func isInDelta(actual, expected, delta interface{}) bool {
 //   - time.Time (in this case delta must be time.Duration)
 func (t *T) NotInDelta(actual, expected, delta interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isInDelta(actual, expected, delta) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "", "Delta:"},
-		arg:  []interface{}{actual, expected, delta},
-		msg:  msg,
-	})
+	return t.report3(actual, expected, delta, msg,
+		!isInDelta(actual, expected, delta))
 }
 
 // InSMAPE checks that actual and expected have a symmetric mean absolute
@@ -1006,14 +928,8 @@ func (t *T) NotInDelta(actual, expected, delta interface{}, msg ...interface{}) 
 //           positive while another is negative
 func (t *T) InSMAPE(actual, expected interface{}, smape float64, msg ...interface{}) bool {
 	t.Helper()
-	if isInSMAPE(actual, expected, smape) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "", "SMAPE:"},
-		arg:  []interface{}{actual, expected, smape},
-		msg:  msg,
-	})
+	return t.report3(actual, expected, smape, msg,
+		isInSMAPE(actual, expected, smape))
 }
 
 func isInSMAPE(actual, expected interface{}, smape float64) bool {
@@ -1035,14 +951,8 @@ func isInSMAPE(actual, expected interface{}, smape float64) bool {
 // See InSMAPE about supported actual/expected types and check logic.
 func (t *T) NotInSMAPE(actual, expected interface{}, smape float64, msg ...interface{}) bool {
 	t.Helper()
-	if !isInSMAPE(actual, expected, smape) {
-		return pass(t.T)
-	}
-	return t.fail(report{
-		name: []string{"", "", "SMAPE:"},
-		arg:  []interface{}{actual, expected, smape},
-		msg:  msg,
-	})
+	return t.report3(actual, expected, smape, msg,
+		!isInSMAPE(actual, expected, smape))
 }
 
 // HasPrefix checks for strings.HasPrefix(actual, expected).
@@ -1056,10 +966,9 @@ func (t *T) NotInSMAPE(actual, expected interface{}, smape float64, msg ...inter
 //   - nil          - check will always fail
 func (t *T) HasPrefix(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isHasPrefix(&actual, &expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	ok := isHasPrefix(&actual, &expected)
+	return t.report2(actual, expected, msg,
+		ok)
 }
 
 // isHasPrefix updates actual and expected to be a real string used for check,
@@ -1077,10 +986,9 @@ func isHasPrefix(actual, expected *interface{}) bool {
 // See HasPrefix about supported actual/expected types and check logic.
 func (t *T) NotHasPrefix(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isHasPrefix(&actual, &expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	ok := !isHasPrefix(&actual, &expected)
+	return t.report2(actual, expected, msg,
+		ok)
 }
 
 // HasSuffix checks for strings.HasSuffix(actual, expected).
@@ -1094,10 +1002,9 @@ func (t *T) NotHasPrefix(actual, expected interface{}, msg ...interface{}) bool 
 //   - nil          - check will always fail
 func (t *T) HasSuffix(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isHasSuffix(&actual, &expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	ok := isHasSuffix(&actual, &expected)
+	return t.report2(actual, expected, msg,
+		ok)
 }
 
 // isHasSuffix updates actual and expected to be a real string used for check,
@@ -1115,10 +1022,9 @@ func isHasSuffix(actual, expected *interface{}) bool {
 // See HasSuffix about supported actual/expected types and check logic.
 func (t *T) NotHasSuffix(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isHasSuffix(&actual, &expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	ok := !isHasSuffix(&actual, &expected)
+	return t.report2(actual, expected, msg,
+		ok)
 }
 
 // JSONEqual normalize formatting of actual and expected (if they're valid
@@ -1135,16 +1041,17 @@ func (t *T) NotHasSuffix(actual, expected interface{}, msg ...interface{}) bool 
 // []rune) is invalid JSON - check will fail.
 func (t *T) JSONEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isJSONEqual(actual, expected) {
-		return pass(t.T)
+	ok := isJSONEqual(actual, expected)
+	if !ok {
+		if buf := jsonify(actual); len(buf) != 0 {
+			actual = buf
+		}
+		if buf := jsonify(expected); len(buf) != 0 {
+			expected = buf
+		}
 	}
-	if buf := jsonify(actual); len(buf) != 0 {
-		actual = buf
-	}
-	if buf := jsonify(expected); len(buf) != 0 {
-		expected = buf
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		ok)
 }
 
 func isJSONEqual(actual, expected interface{}) bool {
@@ -1182,19 +1089,15 @@ func jsonify(arg interface{}) json.RawMessage {
 // HasType checks is actual has same type as expected.
 func (t *T) HasType(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if reflect.TypeOf(actual) == reflect.TypeOf(expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		reflect.TypeOf(actual) == reflect.TypeOf(expected))
 }
 
 // NotHasType checks is actual has not same type as expected.
 func (t *T) NotHasType(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if reflect.TypeOf(actual) != reflect.TypeOf(expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		reflect.TypeOf(actual) != reflect.TypeOf(expected))
 }
 
 // Implements checks is actual implements interface pointed by expected.
@@ -1204,10 +1107,8 @@ func (t *T) NotHasType(actual, expected interface{}, msg ...interface{}) bool {
 //	t.Implements(os.Stdin, (*io.Reader)(nil))
 func (t *T) Implements(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if isImplements(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		isImplements(actual, expected))
 }
 
 func isImplements(actual, expected interface{}) bool {
@@ -1225,8 +1126,6 @@ func isImplements(actual, expected interface{}) bool {
 //	t.NotImplements(os.Stdin, (*fmt.Stringer)(nil))
 func (t *T) NotImplements(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
-	if !isImplements(actual, expected) {
-		return pass(t.T)
-	}
-	return t.fail(report{arg: []interface{}{actual, expected}, msg: msg})
+	return t.report2(actual, expected, msg,
+		!isImplements(actual, expected))
 }

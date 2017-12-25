@@ -75,7 +75,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func pass(t *testing.T) bool {
+func pass(t *testing.T) {
 	stats.Lock()
 	defer stats.Unlock()
 
@@ -83,10 +83,9 @@ func pass(t *testing.T) bool {
 		stats.counter[t] = &counter{name: t.Name()}
 	}
 	stats.counter[t].passed++
-	return true
 }
 
-func fail(t *testing.T) bool {
+func fail(t *testing.T) {
 	stats.Lock()
 	defer stats.Unlock()
 
@@ -94,5 +93,4 @@ func fail(t *testing.T) bool {
 		stats.counter[t] = &counter{name: t.Name()}
 	}
 	stats.counter[t].failed++
-	return false
 }
