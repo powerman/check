@@ -333,8 +333,13 @@ func (t *C) Nil(actual interface{}, msg ...interface{}) bool {
 }
 
 func isNil(actual interface{}) bool {
-	val := reflect.ValueOf(actual)
-	return actual == nil || val.Kind() == reflect.Ptr && val.IsNil()
+	switch val := reflect.ValueOf(actual); val.Kind() {
+	case reflect.Invalid:
+		return actual == nil
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Slice:
+		return val.IsNil()
+	}
+	return false
 }
 
 // NotNil checks for actual != nil.

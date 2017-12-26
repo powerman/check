@@ -10,8 +10,69 @@ import (
 	"regexp"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/powerman/check"
+)
+
+type (
+	myString string
+)
+
+var (
+	zBool       bool
+	zInt        int
+	zInt8       int8
+	zInt16      int16
+	zInt32      int32
+	zInt64      int64
+	zUint       uint
+	zUint8      uint8
+	zUint16     uint16
+	zUint32     uint32
+	zUint64     uint64
+	zUintptr    uintptr
+	zFloat32    float32
+	zFloat64    float64
+	zArray0     [0]int
+	zArray1     [1]int
+	zChan       chan int
+	zFunc       func()
+	zIface      interface{}
+	zMap        map[int]int
+	zSlice      []int
+	zString     string
+	zStruct     struct{}
+	zUnsafe     unsafe.Pointer // don't like to import unsafe
+	zBoolPtr    *bool
+	zIntPtr     *int
+	zInt8Ptr    *int8
+	zInt16Ptr   *int16
+	zInt32Ptr   *int32
+	zInt64Ptr   *int64
+	zUintPtr    *uint
+	zUint8Ptr   *uint8
+	zUint16Ptr  *uint16
+	zUint32Ptr  *uint32
+	zUint64Ptr  *uint64
+	zUintptrPtr *uintptr
+	zFloat32Ptr *float32
+	zFloat64Ptr *float64
+	zArray0Ptr  *[0]int
+	zArray1Ptr  *[1]int
+	zChanPtr    *chan int
+	zFuncPtr    *func()
+	zIfacePtr   *interface{}
+	zMapPtr     *map[int]int
+	zSlicePtr   *[]int
+	zStringPtr  *string
+	zStructPtr  *struct{}
+	zUnsafePtr  *unsafe.Pointer // don't like to import unsafe
+	vChan                       = make(chan int)
+	vFunc                       = func() {}
+	vIface      interface{}     = zIntPtr
+	vMap                        = make(map[int]int)
+	vSlice                      = make([]int, 0)
 )
 
 func TestTODO(tt *testing.T) {
@@ -32,6 +93,9 @@ func TestTODO(tt *testing.T) {
 	// If all tests below this point are broken:
 	t = t.TODO()
 	t.True(false)
+	// Second TODO() doesn't switch it off:
+	t = t.TODO()
+	t.True(false)
 }
 
 func bePositive(_ *check.C, actual interface{}) bool {
@@ -42,16 +106,156 @@ func beEqual(_ *check.C, actual, expected interface{}) bool {
 	return actual == expected
 }
 
-func TestCustomCheck(tt *testing.T) {
+func TestCheckerShould(tt *testing.T) {
 	t := check.T(tt)
 	t.Should(bePositive, 42, "custom check!!!")
-	t.Should(func(_ *check.C, _ interface{}) bool { return true }, 42)
+	t.Panic(func() { t.Should(bePositive, "42", "bad arg type") })
+	t.TODO().Should(func(_ *check.C, _ interface{}) bool { return false }, 42)
 	t.Should(beEqual, 123, 123)
+	t.TODO().Should(beEqual, 123, 124)
 }
 
-type (
-	myString string
-)
+func TestCheckerNil(tt *testing.T) {
+	t := check.T(tt)
+	todo := t.TODO()
+
+	// Ensure expected values
+	t.True(zBool == false)
+	t.True(zInt == 0)
+	t.True(zInt8 == 0)
+	t.True(zInt16 == 0)
+	t.True(zInt32 == 0)
+	t.True(zInt64 == 0)
+	t.True(zUint == 0)
+	t.True(zUint8 == 0)
+	t.True(zUint16 == 0)
+	t.True(zUint32 == 0)
+	t.True(zUint64 == 0)
+	t.True(zUintptr == 0)
+	t.True(zFloat32 == 0)
+	t.True(zFloat64 == 0)
+	t.True(zArray0 == [0]int{})
+	t.True(zArray1 == [1]int{})
+	t.True(zChan == nil)
+	t.True(zFunc == nil)
+	t.True(zIface == nil)
+	t.True(zMap == nil)
+	t.True(zSlice == nil)
+	t.True(zString == "")
+	t.True(zStruct == struct{}{})
+	t.True(zBoolPtr == nil)
+	t.True(zIntPtr == nil)
+	t.True(zInt8Ptr == nil)
+	t.True(zInt16Ptr == nil)
+	t.True(zInt32Ptr == nil)
+	t.True(zInt64Ptr == nil)
+	t.True(zUintPtr == nil)
+	t.True(zUint8Ptr == nil)
+	t.True(zUint16Ptr == nil)
+	t.True(zUint32Ptr == nil)
+	t.True(zUint64Ptr == nil)
+	t.True(zUintptrPtr == nil)
+	t.True(zFloat32Ptr == nil)
+	t.True(zFloat64Ptr == nil)
+	t.True(zArray0Ptr == nil)
+	t.True(zArray1Ptr == nil)
+	t.True(zChanPtr == nil)
+	t.True(zFuncPtr == nil)
+	t.True(zIfacePtr == nil)
+	t.True(zMapPtr == nil)
+	t.True(zSlicePtr == nil)
+	t.True(zStringPtr == nil)
+	t.True(zStructPtr == nil)
+	t.False(vChan == nil)
+	t.False(vFunc == nil)
+	t.False(vIface == nil)
+	t.False(vMap == nil)
+	t.False(vSlice == nil)
+
+	// Subtle case when t.Nil() differs from == nil.
+	zIface = zIntPtr
+	t.Nil(zIface)
+	t.False(zIface == nil)
+	zIface = nil
+	t.Nil(zIface)
+	t.True(zIface == nil)
+
+	cases := []struct {
+		equalNil bool
+		isNil    bool
+		actual   interface{}
+	}{
+		{true, true, nil},
+		{false, false, zBool},
+		{false, false, zInt},
+		{false, false, zInt8},
+		{false, false, zInt16},
+		{false, false, zInt32},
+		{false, false, zInt64},
+		{false, false, zUint},
+		{false, false, zUint8},
+		{false, false, zUint16},
+		{false, false, zUint32},
+		{false, false, zUint64},
+		{false, false, zUintptr},
+		{false, false, zFloat32},
+		{false, false, zFloat64},
+		{false, false, zArray0},
+		{false, false, zArray1},
+		{false, true, zChan},
+		{false, true, zFunc},
+		{true, true, zIface},
+		{false, true, zMap},
+		{false, true, zSlice},
+		{false, false, zString},
+		{false, false, zStruct},
+		{false, false, zUnsafe},
+		{false, true, zBoolPtr},
+		{false, true, zIntPtr},
+		{false, true, zInt8Ptr},
+		{false, true, zInt16Ptr},
+		{false, true, zInt32Ptr},
+		{false, true, zInt64Ptr},
+		{false, true, zUintPtr},
+		{false, true, zUint8Ptr},
+		{false, true, zUint16Ptr},
+		{false, true, zUint32Ptr},
+		{false, true, zUint64Ptr},
+		{false, true, zUintptrPtr},
+		{false, true, zFloat32Ptr},
+		{false, true, zFloat64Ptr},
+		{false, true, zArray0Ptr},
+		{false, true, zArray1Ptr},
+		{false, true, zChanPtr},
+		{false, true, zFuncPtr},
+		{false, true, zIfacePtr},
+		{false, true, zMapPtr},
+		{false, true, zSlicePtr},
+		{false, true, zStringPtr},
+		{false, true, zStructPtr},
+		{false, true, zUnsafePtr},
+		{false, false, vChan},
+		{false, false, vFunc},
+		{false, true, vIface}, // WARNING false-positive (documented)
+		{false, false, vMap},
+		{false, false, vSlice},
+	}
+	for i, v := range cases {
+		msg := fmt.Sprintf("case %d: %#v", i, v.actual)
+		if v.equalNil {
+			t.True(v.actual == nil, msg)
+		} else {
+			t.False(v.actual == nil, msg)
+		}
+		if v.isNil {
+			t.Nil(v.actual, msg)
+			todo.NotNil(v.actual, msg)
+		} else {
+			todo.Nil(v.actual, msg)
+			t.NotNil(v.actual, msg)
+		}
+	}
+}
 
 func TestCheckers(tt *testing.T) {
 	t := check.T(tt)
