@@ -609,7 +609,12 @@ func isZero(actual interface{}) bool {
 		// elements, Struct with non-comparable fields.
 		return actual == reflect.Zero(typ).Interface()
 	} else if typ.Kind() == reflect.Array {
-		return reflect.ValueOf(actual).Len() == 0
+		zero := true
+		val := reflect.ValueOf(actual)
+		for i := 0; i < val.Len() && zero; i++ {
+			zero = isZero(val.Index(i).Interface())
+		}
+		return zero
 	}
 	// Func, Struct with non-comparable fields.
 	// Non-nil Map, Slice.

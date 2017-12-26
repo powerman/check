@@ -189,6 +189,9 @@ func TestCheckerShould(tt *testing.T) {
 	t.TODO().Should(func(_ *check.C, _ interface{}) bool { return false }, 42)
 	t.Should(beEqual, 123, 123)
 	t.TODO().Should(beEqual, 123, 124)
+	t.Panic(func() { t.Should(func() {}, nil) })
+	t.Panic(func() { t.Should(bePositive) })
+	t.Panic(func() { t.Should(beEqual, nil) })
 }
 
 func TestCheckerNilTrue(tt *testing.T) {
@@ -874,6 +877,9 @@ func TestCheckerZero(tt *testing.T) {
 		{vIface, xIface},
 		{nil, vMap},
 		{nil, vSlice},
+		{[0][]int{}, [1][]int{{1}}},
+		{[2][]int{nil, nil}, [2][]int{nil, {}}},
+		{[2][2][2]int{1: {1: {1: 0}}}, [2][2][2]int{1: {1: {1: 1}}}},
 	}
 	for i, v := range cases {
 		msg := fmt.Sprintf("case %d: %#v, %#v", i, v.zero, v.notzero)
