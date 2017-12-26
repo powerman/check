@@ -602,18 +602,17 @@ func (t *C) Zero(actual interface{}, msg ...interface{}) bool {
 }
 
 func isZero(actual interface{}) bool {
-	if actual == nil {
+	if isNil(actual) {
 		return true
 	} else if typ := reflect.TypeOf(actual); typ.Comparable() {
 		// Not Func, Map, Slice, Array with non-comparable
 		// elements, Struct with non-comparable fields.
 		return actual == reflect.Zero(typ).Interface()
-	} else if typ.Kind() == reflect.Map ||
-		typ.Kind() == reflect.Slice ||
-		typ.Kind() == reflect.Array {
+	} else if typ.Kind() == reflect.Array {
 		return reflect.ValueOf(actual).Len() == 0
 	}
 	// Func, Struct with non-comparable fields.
+	// Non-nil Map, Slice.
 	return false
 }
 

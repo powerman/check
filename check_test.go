@@ -811,53 +811,82 @@ func TestCheckerHasKey(tt *testing.T) {
 	t.NotHasKey(map[string]int{"two": 2, "five": 5, "ten": 10}, "")
 }
 
+func TestCheckerZero(tt *testing.T) {
+	t := check.T(tt)
+	todo := t.TODO()
+
+	cases := []struct {
+		zero    interface{}
+		notzero interface{}
+	}{
+		{zBool, xBool},
+		{zInt, xInt},
+		{zInt8, xInt8},
+		{zInt16, xInt16},
+		{zInt32, xInt32},
+		{zInt64, xInt64},
+		{zUint, xUint},
+		{zUint8, xUint8},
+		{zUint16, xUint16},
+		{zUint32, xUint32},
+		{zUint64, xUint64},
+		{zUintptr, xUintptr},
+		{zFloat32, xFloat32},
+		{zFloat64, xFloat64},
+		{zArray0, xArray1},
+		{zArray1, xArray1},
+		{zChan, xChan},
+		{zFunc, xFunc},
+		{zIface, xIface},
+		{zMap, xMap},
+		{zSlice, xSlice},
+		{zString, xString},
+		{zStruct, xStruct},
+		{zBoolPtr, xBoolPtr},
+		{zIntPtr, xIntPtr},
+		{zInt8Ptr, xInt8Ptr},
+		{zInt16Ptr, xInt16Ptr},
+		{zInt32Ptr, xInt32Ptr},
+		{zInt64Ptr, xInt64Ptr},
+		{zUintPtr, xUintPtr},
+		{zUint8Ptr, xUint8Ptr},
+		{zUint16Ptr, xUint16Ptr},
+		{zUint32Ptr, xUint32Ptr},
+		{zUint64Ptr, xUint64Ptr},
+		{zUintptrPtr, xUintptrPtr},
+		{zFloat32Ptr, xFloat32Ptr},
+		{zFloat64Ptr, xFloat64Ptr},
+		{zArray0Ptr, xArray1Ptr},
+		{zArray1Ptr, xArray1Ptr},
+		{zChanPtr, xChanPtr},
+		{zFuncPtr, xFuncPtr},
+		{zIfacePtr, xIfacePtr},
+		{zMapPtr, xMapPtr},
+		{zSlicePtr, xSlicePtr},
+		{zStringPtr, xStringPtr},
+		{zStructPtr, xStructPtr},
+		{zMyInt, xMyInt},
+		{zMyString, xMyString},
+		{zJSON, xJSON},
+		{zJSONPtr, xJSONPtr},
+		{zTime, xTime},
+		{nil, vChan},
+		{nil, vFunc},
+		{vIface, xIface},
+		{nil, vMap},
+		{nil, vSlice},
+	}
+	for i, v := range cases {
+		msg := fmt.Sprintf("case %d: %#v, %#v", i, v.zero, v.notzero)
+		t.Zero(v.zero, msg)
+		todo.Zero(v.notzero, msg)
+		t.NotZero(v.notzero, msg)
+		todo.NotZero(v.zero, msg)
+	}
+}
+
 func TestCheckers(t *testing.T) {
 	time1 := time.Now()
-
-	t.Run("Zero", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.Zero(nil)
-		t.Zero(false)
-		t.Zero(0)
-		t.Zero(int16(0))
-		t.Zero(uintptr(0))
-		t.Zero(0.0)
-		t.Zero("")
-		t.Zero([2]int{})
-		var ch chan int
-		t.Zero(ch)
-		var rw io.ReadWriter
-		t.Zero(rw)
-		t.Zero(map[string]int{})
-		t.Zero(make(map[string]int, 5))
-		var ptr *int
-		var i interface{} = ptr
-		t.Zero(ptr)
-		t.Zero(i)
-		t.Zero([]int(nil))
-		t.Zero([]int{})
-		t.Zero(time.Time{})
-		t.Zero(make([]int, 0, 5))
-	})
-	t.Run("NotZero", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.NotZero(true)
-		t.NotZero(-1)
-		t.NotZero(0.000000001)
-		t.NotZero(" ")
-		t.NotZero("0")
-		t.NotZero([2]int{0, 1})
-		t.NotZero(make(chan int))
-		rw := os.Stdout
-		t.NotZero(rw)
-		t.NotZero(map[string]int{"": 0})
-		t.NotZero(new(int))
-		t.NotZero(make([]int, 1))
-		t.NotZero(time.Now())
-		t.NotZero(testing.T{})
-	})
 
 	t.Run("Len", func(tt *testing.T) {
 		t := check.T(tt)
