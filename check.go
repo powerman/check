@@ -462,8 +462,11 @@ func (t *C) Match(actual, regex interface{}, msg ...interface{}) bool {
 // isMatch updates actual to be a real string used for matching, to make
 // dump easier to understand, but this result in losing type information.
 func isMatch(actual *interface{}, regex interface{}) bool {
-	if !stringify(actual) {
+	if *actual == nil {
 		return false
+	}
+	if !stringify(actual) {
+		panic("actual is not a string, []byte, []rune, fmt.Stringer, error or nil")
 	}
 	s := (*actual).(string)
 
@@ -485,6 +488,18 @@ func stringify(arg *interface{}) bool {
 	case fmt.Stringer:
 		*arg = v.String()
 	default:
+		typ := reflect.TypeOf(*arg)
+		switch typ.Kind() {
+		case reflect.String:
+		case reflect.Slice:
+			switch typ.Elem().Kind() {
+			case reflect.Uint8, reflect.Int32:
+			default:
+				return false
+			}
+		default:
+			return false
+		}
 		*arg = reflect.ValueOf(*arg).Convert(typString).Interface()
 	}
 	return true

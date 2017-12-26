@@ -533,34 +533,121 @@ func TestCheckerBytesEqual(tt *testing.T) {
 	}
 }
 
+func TestCheckerMatch(tt *testing.T) {
+	t := check.T(tt)
+	todo := t.TODO()
+
+	types := []struct {
+		actual   bool
+		expected bool
+		zero     interface{}
+	}{
+		{true, false, nil},
+		{false, false, zBool},
+		{false, false, zInt},
+		{false, false, zInt8},
+		{false, false, zInt16},
+		{false, false, zInt32},
+		{false, false, zInt64},
+		{false, false, zUint},
+		{false, false, zUint8},
+		{false, false, zUint16},
+		{false, false, zUint32},
+		{false, false, zUint64},
+		{false, false, zUintptr},
+		{false, false, zFloat32},
+		{false, false, zFloat64},
+		{false, false, zArray0},
+		{false, false, zArray1},
+		{false, false, zChan},
+		{false, false, zFunc},
+		{false, false, zIface},
+		{false, false, zMap},
+		{false, false, zSlice},
+		{true, true, zString},
+		{false, false, zStruct},
+		{false, false, zBoolPtr},
+		{false, false, zIntPtr},
+		{false, false, zInt8Ptr},
+		{false, false, zInt16Ptr},
+		{false, false, zInt32Ptr},
+		{false, false, zInt64Ptr},
+		{false, false, zUintPtr},
+		{false, false, zUint8Ptr},
+		{false, false, zUint16Ptr},
+		{false, false, zUint32Ptr},
+		{false, false, zUint64Ptr},
+		{false, false, zUintptrPtr},
+		{false, false, zFloat32Ptr},
+		{false, false, zFloat64Ptr},
+		{false, false, zArray0Ptr},
+		{false, false, zArray1Ptr},
+		{false, false, zChanPtr},
+		{false, false, zFuncPtr},
+		{false, false, zIfacePtr},
+		{false, false, zMapPtr},
+		{false, false, zSlicePtr},
+		{false, false, zStringPtr},
+		{false, false, zStructPtr},
+		{false, false, zMyInt},
+		{true, false, zMyString},
+		{true, false, zJSON},
+		{false, false, zJSONPtr},
+		{true, false, zTime},
+		{true, false, time.Sunday},
+		{true, false, errors.New("")},
+		{true, false, []byte(nil)},
+		{true, false, []rune(nil)},
+		{true, true, regexp.MustCompile("")}, // it's also a Stringer
+		{false, false, (*regexp.Regexp)(nil)},
+		{false, false, regexp.Regexp{}},
+	}
+	for i, va := range types {
+		for j, ve := range types {
+			msg := fmt.Sprintf("case %d/%d: %#v, %#v", i, j, va.zero, ve.zero)
+			switch va.zero.(type) {
+			case nil:
+				todo.Match(va.zero, ve.zero, msg)
+			default:
+				if va.actual && ve.expected {
+					t.Match(va.zero, ve.zero, msg)
+				} else {
+					t.Panic(func() { t.Match(va.zero, ve.zero) }, msg)
+				}
+			}
+		}
+	}
+
+	cases := []struct {
+		actual        interface{}
+		regexMatch    interface{}
+		regexNotMatch interface{}
+	}{
+		{"", `^$`, `.`},
+		{myString("Test"), regexp.MustCompile(`st$`), regexp.MustCompile(`ST$`)},
+		{[]byte(nil), `^$`, `nil`},
+		{[]byte("Test"), regexp.MustCompile(`st$`), regexp.MustCompile(`ST$`)},
+		{[]rune(nil), `^$`, `nil`},
+		{[]rune("Test"), regexp.MustCompile(`st$`), regexp.MustCompile(`ST$`)},
+		{zTime, `00:00:00`, `01:01:01`},
+		{time.Sunday, regexp.MustCompile(`^Sun`), regexp.MustCompile(`Sun$`)},
+		{errors.New(""), `^$`, `nil`},
+		{io.EOF, regexp.MustCompile(`^EO`), regexp.MustCompile(`EO$`)},
+	}
+	for _, v := range cases {
+		t.Match(v.actual, v.regexMatch)
+		todo.Match(v.actual, v.regexNotMatch)
+	}
+
+	// No value for .regexMatch.
+	todo.Match(nil, ``)
+	todo.Match(nil, regexp.MustCompile(``))
+	t.NotMatch(nil, ``)
+	t.NotMatch(nil, regexp.MustCompile(``))
+}
+
 func TestCheckers(t *testing.T) {
 	time1 := time.Now()
-
-	t.Run("Match", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.Match("", `^$`)
-		t.Match("", `^.*$`)
-		t.Match(" ", `^\s+$`)
-		t.Match("World", `(?i)w`)
-		t.Match(myString("World"), `(?i)w`)
-		t.Match([]byte("World"), `(?i)w`)
-		t.Match([]rune("World"), `(?i)w`)
-		t.Match("World", regexp.MustCompile(`(?i)w`))
-		t.Match(io.ErrClosedPipe, "closed pipe")
-		t.Match(time.Time{}, "00:00:00")
-	})
-	t.Run("NotMatch", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		var err error
-		t.NotMatch(err, "some error")
-		t.NotMatch(" ", `^$`)
-		t.NotMatch("", `^\s+$`)
-		t.NotMatch("World", `w`)
-		t.NotMatch("World", regexp.MustCompile(`(?-i)w`))
-		t.NotMatch(time.Time{}, "23:59:00")
-	})
 
 	t.Run("Contains", func(tt *testing.T) {
 		t := check.T(tt)
