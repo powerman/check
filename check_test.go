@@ -501,25 +501,40 @@ func TestCheckerEqual(tt *testing.T) {
 	}
 }
 
+func TestCheckerBytesEqual(tt *testing.T) {
+	t := check.T(tt)
+	todo := t.TODO()
+
+	cases := []struct {
+		equal    bool
+		actual   []byte
+		expected []byte
+	}{
+		{true, nil, nil},
+		{true, []byte(nil), []byte(nil)},
+		{true, []byte{}, []byte{}},
+		{true, []byte(nil), nil},
+		{true, []byte{}, nil},
+		{true, []byte(nil), []byte{}},
+		{true, []byte{0}, []byte{0}},
+		{false, []byte{0}, nil},
+		{false, []byte{0}, []byte(nil)},
+		{false, []byte{0}, []byte{}},
+		{false, []byte{0}, []byte{0, 0}},
+	}
+	for _, v := range cases {
+		if v.equal {
+			t.BytesEqual(v.actual, v.expected)
+			todo.NotBytesEqual(v.actual, v.expected)
+		} else {
+			todo.BytesEqual(v.actual, v.expected)
+			t.NotBytesEqual(v.actual, v.expected)
+		}
+	}
+}
+
 func TestCheckers(t *testing.T) {
 	time1 := time.Now()
-
-	t.Run("BytesEqual", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.BytesEqual(nil, nil)
-		t.BytesEqual([]byte(nil), nil)
-		t.BytesEqual([]byte{}, nil)
-		t.BytesEqual([]byte{}, []byte(nil))
-		t.BytesEqual([]byte{0}, []byte{0})
-	})
-	t.Run("NotBytesEqual", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.NotBytesEqual([]byte{0}, nil)
-		t.NotBytesEqual([]byte{0}, []byte{})
-		t.NotBytesEqual([]byte{0}, []byte{0, 0})
-	})
 
 	t.Run("Match", func(tt *testing.T) {
 		t := check.T(tt)
