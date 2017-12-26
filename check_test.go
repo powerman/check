@@ -646,33 +646,96 @@ func TestCheckerMatch(tt *testing.T) {
 	t.NotMatch(nil, regexp.MustCompile(``))
 }
 
+func TestCheckerContains(tt *testing.T) {
+	t := check.T(tt)
+
+	failures := []struct {
+		panic    bool
+		actual   interface{}
+		expected interface{}
+	}{
+		{true, nil, nil},
+		{true, zBool, zBool},
+		{true, zInt, zInt},
+		{true, zInt8, zInt8},
+		{true, zInt16, zInt16},
+		{true, zInt32, zInt32},
+		{true, zInt64, zInt64},
+		{true, zUint, zUint},
+		{true, zUint8, zUint8},
+		{true, zUint16, zUint16},
+		{true, zUint32, zUint32},
+		{true, zUint64, zUint64},
+		{true, zUintptr, zUintptr},
+		{true, zFloat32, zFloat32},
+		{true, zFloat64, zFloat64},
+		{true, zArray0, zBool},
+		{false, zArray0, xInt},
+		{true, zArray1, zBool},
+		{false, zArray1, xInt},
+		{true, zChan, zChan},
+		{true, zFunc, zFunc},
+		{true, zIface, zIface},
+		{true, zMap, zBool},
+		{false, zMap, xInt},
+		{true, zSlice, zBool},
+		{false, zSlice, xInt},
+		{true, zString, zBool},
+		{false, zString, xString},
+		{true, zStruct, zStruct},
+		{true, zBoolPtr, zBoolPtr},
+		{true, zIntPtr, zIntPtr},
+		{true, zInt8Ptr, zInt8Ptr},
+		{true, zInt16Ptr, zInt16Ptr},
+		{true, zInt32Ptr, zInt32Ptr},
+		{true, zInt64Ptr, zInt64Ptr},
+		{true, zUintPtr, zUintPtr},
+		{true, zUint8Ptr, zUint8Ptr},
+		{true, zUint16Ptr, zUint16Ptr},
+		{true, zUint32Ptr, zUint32Ptr},
+		{true, zUint64Ptr, zUint64Ptr},
+		{true, zUintptrPtr, zUintptrPtr},
+		{true, zFloat32Ptr, zFloat32Ptr},
+		{true, zFloat64Ptr, zFloat64Ptr},
+		{true, zArray0Ptr, zArray0Ptr},
+		{true, zArray1Ptr, zArray1Ptr},
+		{true, zChanPtr, zChanPtr},
+		{true, zFuncPtr, zFuncPtr},
+		{true, zIfacePtr, zIfacePtr},
+		{true, zMapPtr, zMapPtr},
+		{true, zSlicePtr, zSlicePtr},
+		{true, zStringPtr, zStringPtr},
+		{true, zStructPtr, zStructPtr},
+		{true, zMyInt, zMyInt},
+		{true, zMyString, zBool},
+		{false, zMyString, xString},
+		{true, zJSON, zBool},
+		{false, zJSON, xUint8},
+		{true, zJSONPtr, zJSONPtr},
+		{true, zTime, zTime},
+	}
+	for i, v := range failures {
+		msg := fmt.Sprintf("case %d: %#v, %#v", i, v.actual, v.expected)
+		if v.panic {
+			t.Panic(func() { t.Contains(v.actual, v.expected) }, msg)
+		} else {
+			t.NotContains(v.actual, v.expected, msg)
+		}
+	}
+
+	t.Contains("", "")
+	t.Contains("Test", "")
+	t.Contains(myString("Test"), "es")
+	t.Contains([...]time.Time{zTime, xTime, xTimeEST}, xTime)
+	t.Contains([]*time.Time{&zTime, &xTime, &xTimeEST}, &xTime)
+	t.Contains([]byte("Test"), byte('e'))
+	t.Contains([]rune("Test"), 'e')
+	t.Contains(map[int]string{2: "two", 5: "five", 10: "ten"}, "five")
+	t.Contains(map[string]int{"two": 2, "five": 5, "ten": 10}, 5)
+}
+
 func TestCheckers(t *testing.T) {
 	time1 := time.Now()
-
-	t.Run("Contains", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.Contains("something", "thing")
-		t.Contains("something", myString("thing"))
-		t.Contains(myString("something"), "thing")
-		t.Contains(myString("something"), myString("thing"))
-		t.Contains([]int{2, 4, 6}, 4)
-		t.Contains([3]*testing.T{nil, tt, nil}, tt)
-		t.Contains(map[*testing.T]int{nil: 2, tt: 5}, 5)
-		t.Contains(map[int]string{2: "something", 5: "thing"}, "thing")
-	})
-	t.Run("NotContains", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.NotContains("something", "Thing")
-		t.NotContains("something", myString("Thing"))
-		t.NotContains(myString("something"), "Thing")
-		t.NotContains(myString("something"), myString("Thing"))
-		t.NotContains([]int{2, 4, 6}, 3)
-		t.NotContains([3]*testing.T{nil, tt, nil}, &testing.T{})
-		t.NotContains(map[*testing.T]int{nil: 2, tt: 5}, 0)
-		t.NotContains(map[int]string{2: "something", 5: "thing"}, "some")
-	})
 
 	t.Run("HasKey", func(tt *testing.T) {
 		t := check.T(tt)
