@@ -732,23 +732,87 @@ func TestCheckerContains(tt *testing.T) {
 	t.Contains([]rune("Test"), 'e')
 	t.Contains(map[int]string{2: "two", 5: "five", 10: "ten"}, "five")
 	t.Contains(map[string]int{"two": 2, "five": 5, "ten": 10}, 5)
+	t.NotContains(map[string]int{"two": 2, "five": 5, "ten": 10}, 0)
+}
+
+func TestCheckerHasKey(tt *testing.T) {
+	t := check.T(tt)
+
+	failures := []struct {
+		panic    bool
+		actual   interface{}
+		expected interface{}
+	}{
+		{true, nil, nil},
+		{true, zBool, zBool},
+		{true, zInt, zInt},
+		{true, zInt8, zInt8},
+		{true, zInt16, zInt16},
+		{true, zInt32, zInt32},
+		{true, zInt64, zInt64},
+		{true, zUint, zUint},
+		{true, zUint8, zUint8},
+		{true, zUint16, zUint16},
+		{true, zUint32, zUint32},
+		{true, zUint64, zUint64},
+		{true, zUintptr, zUintptr},
+		{true, zFloat32, zFloat32},
+		{true, zFloat64, zFloat64},
+		{true, zArray0, zArray0},
+		{true, zArray1, zArray1},
+		{true, zChan, zChan},
+		{true, zFunc, zFunc},
+		{true, zIface, zIface},
+		{true, zMap, zBool},
+		{false, zMap, zInt},
+		{true, zSlice, zSlice},
+		{true, zString, zString},
+		{true, zStruct, zStruct},
+		{true, zBoolPtr, zBoolPtr},
+		{true, zIntPtr, zIntPtr},
+		{true, zInt8Ptr, zInt8Ptr},
+		{true, zInt16Ptr, zInt16Ptr},
+		{true, zInt32Ptr, zInt32Ptr},
+		{true, zInt64Ptr, zInt64Ptr},
+		{true, zUintPtr, zUintPtr},
+		{true, zUint8Ptr, zUint8Ptr},
+		{true, zUint16Ptr, zUint16Ptr},
+		{true, zUint32Ptr, zUint32Ptr},
+		{true, zUint64Ptr, zUint64Ptr},
+		{true, zUintptrPtr, zUintptrPtr},
+		{true, zFloat32Ptr, zFloat32Ptr},
+		{true, zFloat64Ptr, zFloat64Ptr},
+		{true, zArray0Ptr, zArray0Ptr},
+		{true, zArray1Ptr, zArray1Ptr},
+		{true, zChanPtr, zChanPtr},
+		{true, zFuncPtr, zFuncPtr},
+		{true, zIfacePtr, zIfacePtr},
+		{true, zMapPtr, zMapPtr},
+		{true, zSlicePtr, zSlicePtr},
+		{true, zStringPtr, zStringPtr},
+		{true, zStructPtr, zStructPtr},
+		{true, zMyInt, zMyInt},
+		{true, zMyString, zMyString},
+		{true, zJSON, zJSON},
+		{true, zJSONPtr, zJSONPtr},
+		{true, zTime, zTime},
+	}
+	for i, v := range failures {
+		msg := fmt.Sprintf("case %d: %#v, %#v", i, v.actual, v.expected)
+		if v.panic {
+			t.Panic(func() { t.HasKey(v.actual, v.expected) }, msg)
+		} else {
+			t.NotHasKey(v.actual, v.expected, msg)
+		}
+	}
+
+	t.HasKey(map[int]string{2: "two", 5: "five", 10: "ten"}, 5)
+	t.HasKey(map[string]int{"two": 2, "five": 5, "ten": 10}, "five")
+	t.NotHasKey(map[string]int{"two": 2, "five": 5, "ten": 10}, "")
 }
 
 func TestCheckers(t *testing.T) {
 	time1 := time.Now()
-
-	t.Run("HasKey", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.HasKey(map[*testing.T]int{nil: 2, tt: 5}, tt)
-		t.HasKey(map[int]string{2: "something", 5: "thing"}, 5)
-	})
-	t.Run("NotHasKey", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.NotHasKey(map[*testing.T]int{nil: 2, tt: 5}, &testing.T{})
-		t.NotHasKey(map[int]string{2: "something", 5: "thing"}, 0)
-	})
 
 	t.Run("Zero", func(tt *testing.T) {
 		t := check.T(tt)
