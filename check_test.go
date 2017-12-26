@@ -890,48 +890,100 @@ func TestCheckerZero(tt *testing.T) {
 	}
 }
 
-func TestCheckers(t *testing.T) {
-	t.Run("Len", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		c := make(chan int, 5)
-		t.Len(c, 0)
-		c <- 42
-		t.Len(c, 1)
-		t.Len([2]int{}, 2)
-		var m map[string]int
-		t.Len(m, 0)
-		m = make(map[string]int, 10)
-		t.Len(m, 0)
-		m["one"] = 1
-		t.Len(m, 1)
-		t.Len([]int{3, 5}, 2)
-		t.Len("cool", 4)
-		t.Len("тест", 8)
-		t.Len([]byte("тест"), 8)
-		t.Len([]rune("тест"), 4)
-	})
-	t.Run("NotLen", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		c := make(chan int, 5)
-		t.NotLen(c, 5)
-		c <- 42
-		t.NotLen(c, 0)
-		t.NotLen([2]int{}, 0)
-		var m map[string]int
-		t.NotLen(m, 1)
-		m = make(map[string]int, 10)
-		t.NotLen(m, 10)
-		m["one"] = 1
-		t.NotLen(m, 0)
-		t.NotLen([]int{3, 5}, 1)
-		t.NotLen("cool", 3)
-		t.NotLen("тест", 4)
-		t.NotLen([]byte("тест"), 4)
-		t.NotLen([]rune("тест"), 8)
-	})
+func TestCheckerLen(tt *testing.T) {
+	t := check.T(tt)
+	todo := t.TODO()
 
+	cases := []struct {
+		panic  bool
+		actual interface{}
+		len    int
+	}{
+		{true, zBool, 0},
+		{true, zInt, 0},
+		{true, zInt8, 0},
+		{true, zInt16, 0},
+		{true, zInt32, 0},
+		{true, zInt64, 0},
+		{true, zUint, 0},
+		{true, zUint8, 0},
+		{true, zUint16, 0},
+		{true, zUint32, 0},
+		{true, zUint64, 0},
+		{true, zUintptr, 0},
+		{true, zFloat32, 0},
+		{true, zFloat64, 0},
+		{false, zArray0, 1},
+		{false, zArray1, 0},
+		{false, zChan, 1},
+		{true, zFunc, 0},
+		{true, zIface, 0},
+		{false, zMap, 1},
+		{false, zSlice, 1},
+		{false, zString, 1},
+		{true, zStruct, 0},
+		{true, zBoolPtr, 0},
+		{true, zIntPtr, 0},
+		{true, zInt8Ptr, 0},
+		{true, zInt16Ptr, 0},
+		{true, zInt32Ptr, 0},
+		{true, zInt64Ptr, 0},
+		{true, zUintPtr, 0},
+		{true, zUint8Ptr, 0},
+		{true, zUint16Ptr, 0},
+		{true, zUint32Ptr, 0},
+		{true, zUint64Ptr, 0},
+		{true, zUintptrPtr, 0},
+		{true, zFloat32Ptr, 0},
+		{true, zFloat64Ptr, 0},
+		{true, zArray0Ptr, 0},
+		{true, zArray1Ptr, 0},
+		{true, zChanPtr, 0},
+		{true, zFuncPtr, 0},
+		{true, zIfacePtr, 0},
+		{true, zMapPtr, 0},
+		{true, zSlicePtr, 0},
+		{true, zStringPtr, 0},
+		{true, zStructPtr, 0},
+		{true, zMyInt, 0},
+		{false, zMyString, 1},
+		{false, zJSON, 1},
+		{true, zJSONPtr, 0},
+		{true, zTime, 0},
+	}
+	for _, v := range cases {
+		if v.panic {
+			t.Panic(func() { t.Len(v.actual, v.len) })
+		} else {
+			todo.Len(v.actual, v.len)
+			t.NotLen(v.actual, v.len)
+		}
+	}
+
+	t.Len(zArray0, 0)
+	t.Len(zArray1, 1)
+
+	c := make(chan int, 5)
+	t.Len(c, 0)
+	todo.NotLen(c, 0)
+	c <- 42
+	t.Len(c, 1)
+	todo.NotLen(c, 1)
+
+	m := make(map[string]int, 10)
+	t.Len(m, 0)
+	m["one"] = 1
+	m["ten"] = 10
+	t.Len(m, 2)
+
+	t.Len(json.RawMessage("тест"), 8)
+	t.Len([]rune("тест"), 4)
+
+	t.Len(myString("test"), 4)
+	t.Len("тест", 8)
+}
+
+func TestCheckers(t *testing.T) {
 	t.Run("Err", func(tt *testing.T) {
 		t := check.T(tt)
 		t.Parallel()
