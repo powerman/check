@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"testing"
 	"time"
-	"unsafe"
 
 	"github.com/powerman/check"
 )
@@ -31,30 +30,30 @@ type (
 
 var (
 	// Zero values for standard types.
-	zBool       bool
-	zInt        int
-	zInt8       int8
-	zInt16      int16
-	zInt32      int32
-	zInt64      int64
-	zUint       uint
-	zUint8      uint8
-	zUint16     uint16
-	zUint32     uint32
-	zUint64     uint64
-	zUintptr    uintptr
-	zFloat32    float32
-	zFloat64    float64
-	zArray0     [0]int
-	zArray1     [1]int
-	zChan       chan int
-	zFunc       func()
-	zIface      interface{}
-	zMap        map[int]int
-	zSlice      []int
-	zString     string
-	zStruct     struct{}
-	zUnsafe     unsafe.Pointer // don't like to import unsafe
+	zBool    bool
+	zInt     int
+	zInt8    int8
+	zInt16   int16
+	zInt32   int32
+	zInt64   int64
+	zUint    uint
+	zUint8   uint8
+	zUint16  uint16
+	zUint32  uint32
+	zUint64  uint64
+	zUintptr uintptr
+	zFloat32 float32
+	zFloat64 float64
+	zArray0  [0]int
+	zArray1  [1]int
+	zChan    chan int
+	zFunc    func()
+	zIface   interface{}
+	zMap     map[int]int
+	zSlice   []int
+	zString  string
+	zStruct  struct{}
+	// zUnsafe     unsafe.Pointer // don't like to import unsafe
 	zBoolPtr    *bool
 	zIntPtr     *int
 	zInt8Ptr    *int8
@@ -78,7 +77,7 @@ var (
 	zSlicePtr   *[]int
 	zStringPtr  *string
 	zStructPtr  *struct{}
-	zUnsafePtr  *unsafe.Pointer // don't like to import unsafe
+	// zUnsafePtr  *unsafe.Pointer // don't like to import unsafe
 	// Zero values for named types.
 	zMyInt    myInt
 	zMyString myString
@@ -92,58 +91,58 @@ var (
 	vMap               = make(map[int]int)
 	vSlice             = make([]int, 0)
 	// Non-zero values.
-	xBool       bool             = true
-	xInt        int              = -42
-	xInt8       int8             = -8
-	xInt16      int16            = -16
-	xInt32      int32            = -32
-	xInt64      int64            = -64
-	xUint       uint             = 42
-	xUint8      uint8            = 8
-	xUint16     uint16           = 16
-	xUint32     uint32           = 32
-	xUint64     uint64           = 64
-	xUintptr    uintptr          = 0xDEADBEEF
-	xFloat32    float32          = -3.2
-	xFloat64    float64          = 6.4
-	xArray1     [1]int           = [1]int{-1}
-	xChan       chan int         = make(chan int, 1)
-	xFunc       func()           = func() { panic(nil) }
-	xIface      io.Reader        = os.Stdin
-	xMap                         = map[int]int{2: -2, 3: -3, 5: -5}
-	xSlice                       = []int{3, 5, 8}
-	xString     string           = "<nil>"
-	xStruct                      = myStruct{i: 10, s: "ten"}
-	xUnsafe                      = unsafe.Pointer(&xUintptr) // don't like to import unsafe
-	xBoolPtr    *bool            = &xBool
-	xIntPtr     *int             = &xInt
-	xInt8Ptr    *int8            = &xInt8
-	xInt16Ptr   *int16           = &xInt16
-	xInt32Ptr   *int32           = &xInt32
-	xInt64Ptr   *int64           = &xInt64
-	xUintPtr    *uint            = &xUint
-	xUint8Ptr   *uint8           = &xUint8
-	xUint16Ptr  *uint16          = &xUint16
-	xUint32Ptr  *uint32          = &xUint32
-	xUint64Ptr  *uint64          = &xUint64
-	xUintptrPtr *uintptr         = &xUintptr
-	xFloat32Ptr *float32         = &xFloat32
-	xFloat64Ptr *float64         = &xFloat64
-	xArray1Ptr  *[1]int          = &xArray1
-	xChanPtr    *chan int        = &xChan
-	xFuncPtr    *func()          = &xFunc
-	xIfacePtr   *io.Reader       = &xIface
-	xMapPtr     *map[int]int     = &xMap
-	xSlicePtr   *[]int           = &xSlice
-	xStringPtr  *string          = &xString
-	xStructPtr  *myStruct        = &xStruct
-	xUnsafePtr  *unsafe.Pointer  = &xUnsafe // don't like to import unsafe
-	xMyInt      myInt            = 31337
-	xMyString   myString         = "x"
-	xJSON       json.RawMessage  = []byte(`{"s":"ten","i":10}`)
-	xJSONPtr    *json.RawMessage = &xJSON
-	xTime       time.Time        = time.Now()
-	xTimeEST    time.Time        = xTime.In(func() *time.Location { loc, _ := time.LoadLocation("EST"); return loc }())
+	xBool    bool      = true
+	xInt     int       = -42
+	xInt8    int8      = -8
+	xInt16   int16     = -16
+	xInt32   int32     = -32
+	xInt64   int64     = -64
+	xUint    uint      = 42
+	xUint8   uint8     = 8
+	xUint16  uint16    = 16
+	xUint32  uint32    = 32
+	xUint64  uint64    = 64
+	xUintptr uintptr   = 0xDEADBEEF
+	xFloat32 float32   = -3.2
+	xFloat64 float64   = 6.4
+	xArray1  [1]int    = [1]int{-1}
+	xChan    chan int  = make(chan int, 1)
+	xFunc    func()    = func() { panic(nil) }
+	xIface   io.Reader = os.Stdin
+	xMap               = map[int]int{2: -2, 3: -3, 5: -5}
+	xSlice             = []int{3, 5, 8}
+	xString  string    = "<nil>"
+	xStruct            = myStruct{i: 10, s: "ten"}
+	// xUnsafe                      = unsafe.Pointer(&xUintptr) // don't like to import unsafe
+	xBoolPtr    *bool        = &xBool
+	xIntPtr     *int         = &xInt
+	xInt8Ptr    *int8        = &xInt8
+	xInt16Ptr   *int16       = &xInt16
+	xInt32Ptr   *int32       = &xInt32
+	xInt64Ptr   *int64       = &xInt64
+	xUintPtr    *uint        = &xUint
+	xUint8Ptr   *uint8       = &xUint8
+	xUint16Ptr  *uint16      = &xUint16
+	xUint32Ptr  *uint32      = &xUint32
+	xUint64Ptr  *uint64      = &xUint64
+	xUintptrPtr *uintptr     = &xUintptr
+	xFloat32Ptr *float32     = &xFloat32
+	xFloat64Ptr *float64     = &xFloat64
+	xArray1Ptr  *[1]int      = &xArray1
+	xChanPtr    *chan int    = &xChan
+	xFuncPtr    *func()      = &xFunc
+	xIfacePtr   *io.Reader   = &xIface
+	xMapPtr     *map[int]int = &xMap
+	xSlicePtr   *[]int       = &xSlice
+	xStringPtr  *string      = &xString
+	xStructPtr  *myStruct    = &xStruct
+	// xUnsafePtr  *unsafe.Pointer  = &xUnsafe // don't like to import unsafe
+	xMyInt    myInt            = 31337
+	xMyString myString         = "x"
+	xJSON     json.RawMessage  = []byte(`{"s":"ten","i":10}`)
+	xJSONPtr  *json.RawMessage = &xJSON
+	xTime     time.Time        = time.Now()
+	xTimeEST  time.Time        = xTime.In(func() *time.Location { loc, _ := time.LoadLocation("EST"); return loc }())
 )
 
 func TestTODO(tt *testing.T) {
@@ -220,7 +219,7 @@ func TestCheckerNilTrue(tt *testing.T) {
 	t.True(zSlice == nil)
 	t.True(zString == "")
 	t.True(zStruct == struct{}{})
-	t.True(zUnsafe == nil)
+	// t.True(zUnsafe == nil)
 	t.True(zBoolPtr == nil)
 	t.True(zIntPtr == nil)
 	t.True(zInt8Ptr == nil)
@@ -244,7 +243,7 @@ func TestCheckerNilTrue(tt *testing.T) {
 	t.True(zSlicePtr == nil)
 	t.True(zStringPtr == nil)
 	t.True(zStructPtr == nil)
-	t.True(zUnsafePtr == nil)
+	// t.True(zUnsafePtr == nil)
 	t.True(zMyInt == 0)
 	t.True(zMyString == "")
 	t.True(zJSON == nil)
@@ -293,7 +292,7 @@ func TestCheckerNilTrue(tt *testing.T) {
 		{false, true, zSlice},
 		{false, false, zString},
 		{false, false, zStruct},
-		{false, false, zUnsafe},
+		// {false, false, zUnsafe},
 		{false, true, zBoolPtr},
 		{false, true, zIntPtr},
 		{false, true, zInt8Ptr},
@@ -317,7 +316,7 @@ func TestCheckerNilTrue(tt *testing.T) {
 		{false, true, zSlicePtr},
 		{false, true, zStringPtr},
 		{false, true, zStructPtr},
-		{false, true, zUnsafePtr},
+		// {false, true, zUnsafePtr},
 		{false, false, zMyInt},
 		{false, false, zMyString},
 		{false, true, zJSON},
@@ -886,8 +885,6 @@ func TestCheckerZero(tt *testing.T) {
 }
 
 func TestCheckers(t *testing.T) {
-	time1 := time.Now()
-
 	t.Run("Len", func(tt *testing.T) {
 		t := check.T(tt)
 		t.Parallel()
@@ -989,7 +986,7 @@ func TestCheckers(t *testing.T) {
 		{uint64(0), uint64(1)},
 		{0.1, 0.2},
 		{"a1", "a2"},
-		{time1, time1.Add(time.Second)},
+		{xTime, xTime.Add(time.Second)},
 	}
 	t.Run("Less+LT+LessOrEqual+LE", func(tt *testing.T) {
 		t := check.T(tt)
@@ -1027,7 +1024,7 @@ func TestCheckers(t *testing.T) {
 		{uint64(0), uint64(1), uint64(5)},
 		{0.01, 0.1, 0.2},
 		{"a1", "a2", "b"},
-		{time1, time1.Add(time.Millisecond), time1.Add(time.Second)},
+		{xTime, xTime.Add(time.Millisecond), xTime.Add(time.Second)},
 	}
 	t.Run("Between+BetweenOrEqual+NotBetween+NotBetweenOrEqual", func(tt *testing.T) {
 		t := check.T(tt)
@@ -1049,7 +1046,7 @@ func TestCheckers(t *testing.T) {
 		{-1, 0, 1},
 		{byte(92), byte(100), byte(10)},
 		{0.92, 1.0, 0.1},
-		{time1, time1.Add(5 * time.Second), 7 * time.Second},
+		{xTime, xTime.Add(5 * time.Second), 7 * time.Second},
 	}
 	t.Run("InDelta+NotInDelta", func(tt *testing.T) {
 		t := check.T(tt)
