@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -52,4 +53,12 @@ func format(msg ...interface{}) string {
 		return fmt.Sprintf(msg[0].(string), msg[1:]...)
 	}
 	return fmt.Sprint(msg...)
+}
+
+// digits return amount of decimal digits in number.
+func digits(number int) int {
+	if number == 0 {
+		return 1
+	}
+	return int(math.Floor(math.Log10(float64(number)) + 1))
 }

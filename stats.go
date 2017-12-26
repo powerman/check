@@ -9,31 +9,34 @@ import (
 )
 
 type counter struct {
-	name   string
-	passed int
-	forged int
-	failed int
-	force  bool
+	name         string
+	passed       int
+	forged       int
+	failed       int
+	force        bool
+	passedDigits int
+	forgedDigits int
+	failedDigits int
 }
 
 func (c counter) report() {
 	var passed, forged, failed string
 	if c.passed != 0 || c.force {
-		passed = fmt.Sprintf("%s%3d passed%s", ansiGreen, c.passed, ansiReset)
+		passed = fmt.Sprintf("%s%*d passed%s", ansiGreen, c.passedDigits, c.passed, ansiReset)
 	}
 	if c.forged != 0 || c.force {
 		color := ansiYellow
 		if c.forged == 0 {
 			color = ansiReset
 		}
-		forged = fmt.Sprintf("%s%2d todo%s", color, c.forged, ansiReset)
+		forged = fmt.Sprintf("%s%*d todo%s", color, c.forgedDigits, c.forged, ansiReset)
 	}
 	if c.failed != 0 || c.force {
 		color := ansiRed
 		if c.failed == 0 {
 			color = ansiReset
 		}
-		failed = fmt.Sprintf("%s%3d failed%s", color, c.failed, ansiReset)
+		failed = fmt.Sprintf("%s%*d failed%s", color, c.failedDigits, c.failed, ansiReset)
 	}
 	fmt.Printf("  checks:  %10s  %7s  %10s\t%s\n", passed, forged, failed, c.name)
 }
@@ -61,13 +64,21 @@ func Report() {
 	ts := make([]*testing.T, 0, len(stats.counter))
 	for t := range stats.counter {
 		ts = append(ts, t)
-	}
-	sort.Slice(ts, func(a, b int) bool { return ts[a].Name() < ts[b].Name() })
-	for _, t := range ts {
 		total.passed += stats.counter[t].passed
 		total.forged += stats.counter[t].forged
 		total.failed += stats.counter[t].failed
+	}
+
+	total.passedDigits = digits(total.passed)
+	total.forgedDigits = digits(total.forged)
+	total.failedDigits = digits(total.failed)
+
+	sort.Slice(ts, func(a, b int) bool { return ts[a].Name() < ts[b].Name() })
+	for _, t := range ts {
 		if testing.Verbose() {
+			stats.counter[t].passedDigits = total.passedDigits
+			stats.counter[t].forgedDigits = total.forgedDigits
+			stats.counter[t].failedDigits = total.failedDigits
 			stats.counter[t].report()
 		}
 	}
