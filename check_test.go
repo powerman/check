@@ -15,7 +15,12 @@ import (
 	"github.com/powerman/check"
 )
 
+func init() {
+	time.Local = time.UTC
+}
+
 type (
+	myInt    int
 	myString string
 )
 
@@ -68,11 +73,16 @@ var (
 	zStringPtr  *string
 	zStructPtr  *struct{}
 	zUnsafePtr  *unsafe.Pointer // don't like to import unsafe
-	vChan                       = make(chan int)
-	vFunc                       = func() {}
-	vIface      interface{}     = zIntPtr
-	vMap                        = make(map[int]int)
-	vSlice                      = make([]int, 0)
+	zMyInt      myInt
+	zMyString   myString
+	zJSON       json.RawMessage
+	zJSONPtr    *json.RawMessage
+	zTime       time.Time
+	vChan                   = make(chan int)
+	vFunc                   = func() {}
+	vIface      interface{} = zIntPtr
+	vMap                    = make(map[int]int)
+	vSlice                  = make([]int, 0)
 )
 
 func TestTODO(tt *testing.T) {
@@ -98,6 +108,12 @@ func TestTODO(tt *testing.T) {
 	t.True(false)
 }
 
+func TestMust(tt *testing.T) {
+	t := check.T(tt)
+	t.Must(t.Nil(nil))
+	t.Must(t.NotNil(false))
+}
+
 func bePositive(_ *check.C, actual interface{}) bool {
 	return actual.(int) > 0
 }
@@ -115,12 +131,12 @@ func TestCheckerShould(tt *testing.T) {
 	t.TODO().Should(beEqual, 123, 124)
 }
 
-func TestCheckerNil(tt *testing.T) {
+func TestCheckersNilTrue(tt *testing.T) {
 	t := check.T(tt)
 	todo := t.TODO()
 
 	// Ensure expected values
-	t.True(zBool == false)
+	t.Equal(zBool, false) // gometalinter hates zBool==false
 	t.True(zInt == 0)
 	t.True(zInt8 == 0)
 	t.True(zInt16 == 0)
@@ -143,6 +159,7 @@ func TestCheckerNil(tt *testing.T) {
 	t.True(zSlice == nil)
 	t.True(zString == "")
 	t.True(zStruct == struct{}{})
+	t.True(zUnsafe == nil)
 	t.True(zBoolPtr == nil)
 	t.True(zIntPtr == nil)
 	t.True(zInt8Ptr == nil)
@@ -166,6 +183,12 @@ func TestCheckerNil(tt *testing.T) {
 	t.True(zSlicePtr == nil)
 	t.True(zStringPtr == nil)
 	t.True(zStructPtr == nil)
+	t.True(zUnsafePtr == nil)
+	t.True(zMyInt == 0)
+	t.True(zMyString == "")
+	t.True(zJSON == nil)
+	t.True(zJSONPtr == nil)
+	t.True(zTime == time.Time{})
 	t.False(vChan == nil)
 	t.False(vFunc == nil)
 	t.False(vIface == nil)
@@ -234,6 +257,11 @@ func TestCheckerNil(tt *testing.T) {
 		{false, true, zStringPtr},
 		{false, true, zStructPtr},
 		{false, true, zUnsafePtr},
+		{false, false, zMyInt},
+		{false, false, zMyString},
+		{false, true, zJSON},
+		{false, true, zJSONPtr},
+		{false, false, zTime},
 		{false, false, vChan},
 		{false, false, vFunc},
 		{false, true, vIface}, // WARNING false-positive (documented)
@@ -257,26 +285,9 @@ func TestCheckerNil(tt *testing.T) {
 	}
 }
 
-func TestCheckers(tt *testing.T) {
-	t := check.T(tt)
-
-	var intPtr *int
-	var empty interface{}
-	var notEmpty interface{} = intPtr
-	t.Must(t.Nil(nil))
-	t.Nil(intPtr)
-	t.Nil(empty)
-	t.Nil(notEmpty) // see doc about why it works this way
-	t.Must(t.NotNil(false))
-	t.NotNil(uintptr(0))
-
-	t.True(intPtr == nil)
-	t.True(empty == nil)
-	t.False(notEmpty == nil)
-
+func TestCheckers(t *testing.T) {
 	loc, err := time.LoadLocation("EST")
-	t.Nil(err)
-	time.Local = time.UTC
+	check.T(t).Nil(err)
 	time1 := time.Now()
 	time2 := time1.In(loc)
 
@@ -298,7 +309,7 @@ func TestCheckers(tt *testing.T) {
 		{int32(0), int64(0)},
 		{0, 0.0},
 		{"", "msg"},
-		{t, tt},
+		{t, check.T(t)},
 		{&testing.T{}, &testing.T{}},
 		{io.EOF, errors.New("EOF")},
 		{time1, time1.Add(time.Second)},
