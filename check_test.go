@@ -986,53 +986,70 @@ func TestCheckerLen(tt *testing.T) {
 func TestCheckers(t *testing.T) {
 	t.Run("Err", func(tt *testing.T) {
 		t := check.T(tt)
+		todo := t.TODO()
 		t.Parallel()
-		t.Err(io.EOF, io.EOF)
-		t.Err(io.EOF, errors.New("EOF"))
-		var err error
-		t.Err(err, nil)
-		err = &net.OpError{}
-		t.Err(err, &net.OpError{})
-	})
-	t.Run("NotErr", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
+
+		t.Err(nil, nil)
+
 		err := (*net.OpError)(nil)
+		todo.Err(err, nil)
 		t.NotErr(err, nil)
-		t.NotErr(nil, io.EOF)
+		todo.Err(nil, err)
+		t.NotErr(nil, err)
+
+		t.Err(err, err)
+		todo.NotErr(err, err)
+		t.Err(io.EOF, io.EOF)
+		todo.NotErr(io.EOF, io.EOF)
+		t.Err(io.EOF, errors.New("EOF"))
+		todo.NotErr(io.EOF, errors.New("EOF"))
+		t.Err(&net.OpError{}, &net.OpError{})
 	})
 
-	t.Run("Panic", func(tt *testing.T) {
+	c := check.T(t) // to test (*check.C).Run
+	c.Run("Panic", func(tt *testing.T) {
 		t := check.T(tt)
+		todo := t.TODO()
 		t.Parallel()
+
+		todo.Panic(func() {})
+		t.NotPanic(func() {})
+
 		t.Panic(func() { panic(nil) })
+		todo.NotPanic(func() { panic(nil) })
+
 		t.Panic(func() { panic("") })
 		t.Panic(func() { panic("oops") })
 		t.Panic(func() { panic(t) })
 	})
-	t.Run("NotPanic", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.NotPanic(func() {})
-	})
 
-	t.Run("PanicMatch", func(tt *testing.T) {
+	c.Run("PanicMatch", func(tt *testing.T) {
 		t := check.T(tt)
+		todo := t.TODO()
 		t.Parallel()
-		t.PanicMatch(func() { panic(nil) }, "")
-		t.PanicMatch(func() { panic(nil) }, "^<nil>$")
-		t.PanicMatch(func() { panic("") }, regexp.MustCompile("^$"))
-		t.PanicMatch(func() { panic("oops") }, "(?i)Oops")
-		t.PanicMatch(func() { panic(t) }, "^&check.C{")
-	})
-	t.Run("PanicNotMatch", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.PanicNotMatch(func() { panic(nil) }, "^$")
-		t.PanicNotMatch(func() { panic(nil) }, "^nil$")
-		t.PanicNotMatch(func() { panic("") }, regexp.MustCompile("."))
-		t.PanicNotMatch(func() { panic("oops") }, "(?-i)Oops")
-		t.PanicNotMatch(func() { panic(t) }, "^*testing.T{")
+
+		t.Panic(func() { t.PanicMatch(func() { panic(0) }, nil) })
+		t.Panic(func() { t.PanicMatch(func() { panic(0) }, t) })
+		t.NotPanic(func() { t.PanicMatch(func() { panic(0) }, `0`) })
+
+		todo.PanicMatch(func() {}, ``)
+		todo.PanicNotMatch(func() {}, ``)
+		todo.PanicMatch(func() {}, `test`)
+		todo.PanicNotMatch(func() {}, `test`)
+
+		t.PanicMatch(func() { panic(nil) }, ``)
+		todo.PanicNotMatch(func() { panic(nil) }, ``)
+		t.PanicMatch(func() { panic(nil) }, `^<nil>$`)
+		todo.PanicNotMatch(func() { panic(nil) }, `^<nil>$`)
+		t.PanicNotMatch(func() { panic(nil) }, `test`)
+		todo.PanicMatch(func() { panic(nil) }, `test`)
+
+		t.PanicMatch(func() { panic("") }, regexp.MustCompile(`^$`))
+		t.PanicMatch(func() { panic("oops") }, `(?i)Oops`)
+		t.PanicMatch(func() { panic(t) }, `^&check.C{`)
+		t.PanicNotMatch(func() { panic("") }, regexp.MustCompile(`.`))
+		t.PanicNotMatch(func() { panic("oops") }, `(?-i)Oops`)
+		todo.PanicNotMatch(func() { panic(t) }, `^&check.C{`)
 	})
 
 	less := []struct{ actual, expected interface{} }{
