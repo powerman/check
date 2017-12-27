@@ -1506,6 +1506,95 @@ func TestJSONEqual(tt *testing.T) {
 	}
 }
 
+func TestHasType(tt *testing.T) {
+	t := check.T(tt)
+	todo := t.TODO()
+
+	vs := []interface{}{
+		zBool,
+		zInt,
+		zInt8,
+		zInt16,
+		zInt32,
+		zInt64,
+		zUint,
+		zUint8,
+		zUint16,
+		zUint32,
+		zUint64,
+		zUintptr,
+		zFloat32,
+		zFloat64,
+		zArray0,
+		zArray1,
+		zChan,
+		zFunc,
+		zIface, // nil
+		zMap,
+		zSlice,
+		zString,
+		zStruct,
+		zBoolPtr,
+		zIntPtr,
+		zInt8Ptr,
+		zInt16Ptr,
+		zInt32Ptr,
+		zInt64Ptr,
+		zUintPtr,
+		zUint8Ptr,
+		zUint16Ptr,
+		zUint32Ptr,
+		zUint64Ptr,
+		zUintptrPtr,
+		zFloat32Ptr,
+		zFloat64Ptr,
+		zArray0Ptr,
+		zArray1Ptr,
+		zChanPtr,
+		zFuncPtr,
+		zIfacePtr,
+		zMapPtr,
+		zSlicePtr,
+		zStringPtr,
+		zStructPtr,
+		zMyInt,
+		zMyString,
+		zJSON,
+		zJSONPtr,
+		zTime,
+	}
+	for i, actual := range vs {
+		for j, expected := range vs {
+			if i == j {
+				t.HasType(actual, expected)
+				todo.NotHasType(actual, expected)
+			} else {
+				t.NotHasType(actual, expected)
+				todo.HasType(actual, expected)
+			}
+		}
+	}
+
+	t.HasType(vChan, zChan)
+	t.HasType(vFunc, zFunc)
+	t.HasType(vIface, zIntPtr)
+	t.HasType(vMap, zMap)
+	t.HasType(vSlice, zSlice)
+	var reader io.Reader
+	t.HasType(reader, nil)
+	t.HasType(&reader, (*io.Reader)(nil))
+	t.NotHasType(&reader, nil)
+	t.HasType(os.Stdin, (*os.File)(nil))
+	t.NotHasType(os.Stdin, &reader)
+	t.HasType(true, zBool)
+	t.HasType(42, zInt)
+	t.HasType("test", zString)
+	t.HasType([]byte("test"), []byte(nil))
+	t.HasType([]byte("test"), []byte{})
+	t.HasType(new(int), zIntPtr)
+	t.NotHasType(json.RawMessage([]byte("test")), []byte("test"))
+}
+
 func TestCheckers(t *testing.T) {
 	t.Run("Err", func(tt *testing.T) {
 		t := check.T(tt)
@@ -1596,29 +1685,6 @@ func TestCheckers(t *testing.T) {
 		t.PanicNotMatch(func() { panic("") }, regexp.MustCompile(`.`))
 		t.PanicNotMatch(func() { panic("oops") }, `(?-i)Oops`)
 		todo.PanicNotMatch(func() { panic(t) }, `^&check.C{`)
-	})
-
-	t.Run("HasType+NotHasType", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		var reader io.Reader
-		t.HasType(nil, nil)
-		t.HasType(reader, nil)
-		t.HasType(false, true)
-		t.HasType(42, 0)
-		t.HasType("test", "")
-		t.HasType([]byte("test"), []byte(nil))
-		t.HasType([]byte("test"), []byte{})
-		t.HasType(&reader, (*io.Reader)(nil))
-		t.HasType(os.Stdin, (*os.File)(nil))
-		t.HasType(new(int), (*int)(nil))
-		t.NotHasType(nil, (*int)(nil))
-		t.NotHasType((*int)(nil), nil)
-		t.NotHasType((*int)(nil), (*uint)(nil))
-		t.NotHasType(&reader, nil)
-		t.NotHasType(42, uint(42))
-		t.NotHasType(0.0, 0)
-		t.NotHasType(json.RawMessage([]byte("test")), []byte{})
 	})
 
 	t.Run("Implements+NotImplements", func(tt *testing.T) {
