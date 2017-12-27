@@ -26,7 +26,10 @@ type (
 		i int
 		s string
 	}
+	myError struct{ s string }
 )
+
+func (e myError) Error() string { return e.s }
 
 var (
 	// Zero values for standard types.
@@ -91,8 +94,8 @@ var (
 	vMap               = make(map[int]int)
 	vSlice             = make([]int, 0)
 	// Non-zero values.
-	xBool    bool      = true
-	xInt     int       = -42
+	xBool              = true
+	xInt               = -42
 	xInt8    int8      = -8
 	xInt16   int16     = -16
 	xInt32   int32     = -32
@@ -104,45 +107,45 @@ var (
 	xUint64  uint64    = 64
 	xUintptr uintptr   = 0xDEADBEEF
 	xFloat32 float32   = -3.2
-	xFloat64 float64   = 6.4
-	xArray1  [1]int    = [1]int{-1}
-	xChan    chan int  = make(chan int, 1)
-	xFunc    func()    = func() { panic(nil) }
+	xFloat64           = 6.4
+	xArray1            = [1]int{-1}
+	xChan              = make(chan int, 1)
+	xFunc              = func() { panic(nil) }
 	xIface   io.Reader = os.Stdin
 	xMap               = map[int]int{2: -2, 3: -3, 5: -5}
 	xSlice             = []int{3, 5, 8}
-	xString  string    = "<nil>"
+	xString            = "<nil>"
 	xStruct            = myStruct{i: 10, s: "ten"}
 	// xUnsafe                      = unsafe.Pointer(&xUintptr) // don't like to import unsafe
-	xBoolPtr    *bool        = &xBool
-	xIntPtr     *int         = &xInt
-	xInt8Ptr    *int8        = &xInt8
-	xInt16Ptr   *int16       = &xInt16
-	xInt32Ptr   *int32       = &xInt32
-	xInt64Ptr   *int64       = &xInt64
-	xUintPtr    *uint        = &xUint
-	xUint8Ptr   *uint8       = &xUint8
-	xUint16Ptr  *uint16      = &xUint16
-	xUint32Ptr  *uint32      = &xUint32
-	xUint64Ptr  *uint64      = &xUint64
-	xUintptrPtr *uintptr     = &xUintptr
-	xFloat32Ptr *float32     = &xFloat32
-	xFloat64Ptr *float64     = &xFloat64
-	xArray1Ptr  *[1]int      = &xArray1
-	xChanPtr    *chan int    = &xChan
-	xFuncPtr    *func()      = &xFunc
-	xIfacePtr   *io.Reader   = &xIface
-	xMapPtr     *map[int]int = &xMap
-	xSlicePtr   *[]int       = &xSlice
-	xStringPtr  *string      = &xString
-	xStructPtr  *myStruct    = &xStruct
+	xBoolPtr    = &xBool
+	xIntPtr     = &xInt
+	xInt8Ptr    = &xInt8
+	xInt16Ptr   = &xInt16
+	xInt32Ptr   = &xInt32
+	xInt64Ptr   = &xInt64
+	xUintPtr    = &xUint
+	xUint8Ptr   = &xUint8
+	xUint16Ptr  = &xUint16
+	xUint32Ptr  = &xUint32
+	xUint64Ptr  = &xUint64
+	xUintptrPtr = &xUintptr
+	xFloat32Ptr = &xFloat32
+	xFloat64Ptr = &xFloat64
+	xArray1Ptr  = &xArray1
+	xChanPtr    = &xChan
+	xFuncPtr    = &xFunc
+	xIfacePtr   = &xIface
+	xMapPtr     = &xMap
+	xSlicePtr   = &xSlice
+	xStringPtr  = &xString
+	xStructPtr  = &xStruct
 	// xUnsafePtr  *unsafe.Pointer  = &xUnsafe // don't like to import unsafe
-	xMyInt    myInt            = 31337
-	xMyString myString         = "x"
-	xJSON     json.RawMessage  = []byte(`{"s":"ten","i":10}`)
-	xJSONPtr  *json.RawMessage = &xJSON
-	xTime     time.Time        = time.Now()
-	xTimeEST  time.Time        = xTime.In(func() *time.Location { loc, _ := time.LoadLocation("EST"); return loc }())
+	xMyInt    myInt           = 31337
+	xMyString myString        = "x"
+	xJSON     json.RawMessage = []byte(`{"s":"ten","i":10}`)
+	xJSONPtr                  = &xJSON
+	xTime                     = time.Now()
+	xTimeEST                  = xTime.In(func() *time.Location { loc, _ := time.LoadLocation("EST"); return loc }())
 )
 
 func TestTODO(tt *testing.T) {
@@ -983,31 +986,149 @@ func TestCheckerLen(tt *testing.T) {
 	t.Len("тест", 8)
 }
 
+func TestCheckerLessGreater(tt *testing.T) {
+	t := check.T(tt)
+	todo := t.TODO()
+
+	cases := []struct {
+		panic    bool
+		actual   interface{}
+		expected interface{}
+	}{
+		{true, zBool, xBool},
+		{false, xInt, xInt + 1},
+		{false, xInt8, xInt8 + 1},
+		{false, xInt16, xInt16 + 1},
+		{false, xInt32, xInt32 + 1},
+		{false, xInt64, xInt64 + 1},
+		{false, xUint, xUint + 1},
+		{false, xUint8, xUint8 + 1},
+		{false, xUint16, xUint16 + 1},
+		{false, xUint32, xUint32 + 1},
+		{false, xUint64, xUint64 + 1},
+		{false, xUintptr, xUintptr + 1},
+		{false, xFloat32, xFloat32 + 1},
+		{false, xFloat64, xFloat64 + 1},
+		{true, zArray0, zArray0},
+		{true, zArray1, xArray1},
+		{true, zChan, xChan},
+		{true, zFunc, xFunc},
+		{true, zIface, xIface},
+		{true, zMap, xMap},
+		{true, zSlice, xSlice},
+		{false, xString, xString + "1"},
+		{true, zStruct, xStruct},
+		{true, zBoolPtr, xBoolPtr},
+		{true, zIntPtr, xIntPtr},
+		{true, zInt8Ptr, xInt8Ptr},
+		{true, zInt16Ptr, xInt16Ptr},
+		{true, zInt32Ptr, xInt32Ptr},
+		{true, zInt64Ptr, xInt64Ptr},
+		{true, zUintPtr, xUintPtr},
+		{true, zUint8Ptr, xUint8Ptr},
+		{true, zUint16Ptr, xUint16Ptr},
+		{true, zUint32Ptr, xUint32Ptr},
+		{true, zUint64Ptr, xUint64Ptr},
+		{true, zUintptrPtr, xUintptrPtr},
+		{true, zFloat32Ptr, xFloat32Ptr},
+		{true, zFloat64Ptr, xFloat64Ptr},
+		{true, zArray0Ptr, zArray0Ptr},
+		{true, zArray1Ptr, xArray1Ptr},
+		{true, zChanPtr, xChanPtr},
+		{true, zFuncPtr, xFuncPtr},
+		{true, zIfacePtr, xIfacePtr},
+		{true, zMapPtr, xMapPtr},
+		{true, zSlicePtr, xSlicePtr},
+		{true, zStringPtr, xStringPtr},
+		{true, zStructPtr, xStructPtr},
+		{false, xMyInt, xMyInt + 1},
+		{false, xMyString, xMyString + "1"},
+		{true, xJSON, xJSON},
+		{true, xJSONPtr, xJSONPtr},
+		{false, xTime, xTime.Add(time.Second)},
+	}
+	for _, v := range cases {
+		if v.panic {
+			t.Panic(func() { t.Less(v.actual, v.expected) })
+			t.Panic(func() { t.LT(v.actual, v.expected) })
+			t.Panic(func() { t.LessOrEqual(v.actual, v.expected) })
+			t.Panic(func() { t.LE(v.actual, v.expected) })
+			t.Panic(func() { t.Greater(v.actual, v.expected) })
+			t.Panic(func() { t.GT(v.actual, v.expected) })
+			t.Panic(func() { t.GreaterOrEqual(v.actual, v.expected) })
+			t.Panic(func() { t.GE(v.actual, v.expected) })
+		} else {
+			t.Less(v.actual, v.expected)
+			t.LT(v.actual, v.expected)
+			t.LessOrEqual(v.actual, v.expected)
+			t.LessOrEqual(v.actual, v.actual)
+			t.LE(v.actual, v.expected)
+			t.LE(v.actual, v.actual)
+			todo.Greater(v.actual, v.expected)
+			todo.GT(v.actual, v.expected)
+			todo.GreaterOrEqual(v.actual, v.expected)
+			todo.GE(v.actual, v.expected)
+
+			v.actual, v.expected = v.expected, v.actual
+			t.Greater(v.actual, v.expected)
+			t.GT(v.actual, v.expected)
+			t.GreaterOrEqual(v.actual, v.expected)
+			t.GreaterOrEqual(v.actual, v.actual)
+			t.GE(v.actual, v.expected)
+			t.GE(v.actual, v.actual)
+			todo.Less(v.actual, v.expected)
+			todo.LT(v.actual, v.expected)
+			todo.LessOrEqual(v.actual, v.expected)
+			todo.LE(v.actual, v.expected)
+		}
+	}
+}
+
 func TestCheckers(t *testing.T) {
 	t.Run("Err", func(tt *testing.T) {
 		t := check.T(tt)
 		todo := t.TODO()
 		t.Parallel()
 
-		t.Err(nil, nil)
-
-		err := (*net.OpError)(nil)
-		todo.Err(err, nil)
-		t.NotErr(err, nil)
-		todo.Err(nil, err)
-		t.NotErr(nil, err)
-
-		t.Err(err, err)
-		todo.NotErr(err, err)
-		t.Err(io.EOF, io.EOF)
-		todo.NotErr(io.EOF, io.EOF)
-		t.Err(io.EOF, errors.New("EOF"))
-		todo.NotErr(io.EOF, errors.New("EOF"))
-		t.Err(&net.OpError{}, &net.OpError{})
+		cases := []struct {
+			err       bool
+			deepEqual bool
+			equal     bool
+			actual    error
+			expected  error
+		}{
+			{true, true, true, nil, nil},
+			{false, false, false, (*net.OpError)(nil), &net.OpError{}},
+			{false, false, false, (*net.OpError)(nil), nil},
+			{false, false, false, nil, (*net.OpError)(nil)},
+			{true, true, true, (*net.OpError)(nil), (*net.OpError)(nil)},
+			{true, true, false, &net.OpError{}, &net.OpError{}},
+			{true, true, true, io.EOF, io.EOF},
+			{true, true, false, io.EOF, errors.New("EOF")},
+			{false, false, false, io.EOF, &myError{"EOF"}},
+		}
+		for _, v := range cases {
+			if v.err {
+				t.Err(v.actual, v.expected)
+				todo.NotErr(v.actual, v.expected)
+			} else {
+				todo.Err(v.actual, v.expected)
+				t.NotErr(v.actual, v.expected)
+			}
+			if v.equal {
+				t.Equal(v.actual, v.expected)
+			} else {
+				t.NotEqual(v.actual, v.expected)
+			}
+			if v.deepEqual {
+				t.DeepEqual(v.actual, v.expected)
+			} else {
+				t.NotDeepEqual(v.actual, v.expected)
+			}
+		}
 	})
 
-	c := check.T(t) // to test (*check.C).Run
-	c.Run("Panic", func(tt *testing.T) {
+	t.Run("Panic", func(tt *testing.T) {
 		t := check.T(tt)
 		todo := t.TODO()
 		t.Parallel()
@@ -1021,9 +1142,12 @@ func TestCheckers(t *testing.T) {
 		t.Panic(func() { panic("") })
 		t.Panic(func() { panic("oops") })
 		t.Panic(func() { panic(t) })
+		todo.NotPanic(func() { panic("") })
+		todo.NotPanic(func() { panic("oops") })
+		todo.NotPanic(func() { panic(t) })
 	})
 
-	c.Run("PanicMatch", func(tt *testing.T) {
+	t.Run("PanicMatch", func(tt *testing.T) {
 		t := check.T(tt)
 		todo := t.TODO()
 		t.Parallel()
@@ -1050,44 +1174,6 @@ func TestCheckers(t *testing.T) {
 		t.PanicNotMatch(func() { panic("") }, regexp.MustCompile(`.`))
 		t.PanicNotMatch(func() { panic("oops") }, `(?-i)Oops`)
 		todo.PanicNotMatch(func() { panic(t) }, `^&check.C{`)
-	})
-
-	less := []struct{ actual, expected interface{} }{
-		{0, 1},
-		{int8(-1), int8(0)},
-		{'a', 'b'},
-		{2 << 60, 2 << 61},
-		{byte(254), byte(255)},
-		{uint64(0), uint64(1)},
-		{0.1, 0.2},
-		{"a1", "a2"},
-		{xTime, xTime.Add(time.Second)},
-	}
-	t.Run("Less+LT+LessOrEqual+LE", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		for _, v := range less {
-			actual, expected := v.actual, v.expected
-			t.Less(actual, expected)
-			t.LT(actual, expected)
-			t.LessOrEqual(actual, expected)
-			t.LessOrEqual(actual, actual)
-			t.LE(actual, expected)
-			t.LE(actual, actual)
-		}
-	})
-	t.Run("Greater+GT+GreaterOrEqual+GE", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		for _, v := range less {
-			actual, expected := v.expected, v.actual
-			t.Greater(actual, expected)
-			t.GT(actual, expected)
-			t.GreaterOrEqual(actual, expected)
-			t.GreaterOrEqual(actual, actual)
-			t.GE(actual, expected)
-			t.GE(actual, actual)
-		}
 	})
 
 	between := []struct{ min, mid, max interface{} }{
