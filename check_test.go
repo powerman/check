@@ -986,102 +986,273 @@ func TestCheckerLen(tt *testing.T) {
 	t.Len("тест", 8)
 }
 
-func TestCheckerLessGreater(tt *testing.T) {
-	t := check.T(tt)
-	todo := t.TODO()
+func TestCheckerOrdered(t *testing.T) {
+	cases := []struct {
+		panic bool
+		min   interface{}
+		mid   interface{}
+		max   interface{}
+	}{
+		{true, zBool, xBool, xBool},
+		{false, xInt, xInt + 1, xInt + 2},
+		{false, xInt8, xInt8 + 1, xInt8 + 2},
+		{false, xInt16, xInt16 + 1, xInt16 + 2},
+		{false, xInt32, xInt32 + 1, xInt32 + 2},
+		{false, xInt64, xInt64 + 1, xInt64 + 2},
+		{false, xUint, xUint + 1, xUint + 2},
+		{false, xUint8, xUint8 + 1, xUint8 + 2},
+		{false, xUint16, xUint16 + 1, xUint16 + 2},
+		{false, xUint32, xUint32 + 1, xUint32 + 2},
+		{false, xUint64, xUint64 + 1, xUint64 + 2},
+		{false, xUintptr, xUintptr + 1, xUintptr + 2},
+		{false, xFloat32, xFloat32 + 1, xFloat32 + 2},
+		{false, xFloat64, xFloat64 + 1, xFloat64 + 2},
+		{true, zArray0, zArray0, zArray0},
+		{true, zArray1, xArray1, xArray1},
+		{true, zChan, xChan, xChan},
+		{true, zFunc, xFunc, xFunc},
+		{true, zIface, xIface, xIface},
+		{true, zMap, xMap, xMap},
+		{true, zSlice, xSlice, xSlice},
+		{false, xString, xString + "1", xString + "2"},
+		{true, zStruct, xStruct, xStruct},
+		{true, zBoolPtr, xBoolPtr, xBoolPtr},
+		{true, zIntPtr, xIntPtr, xIntPtr},
+		{true, zInt8Ptr, xInt8Ptr, xInt8Ptr},
+		{true, zInt16Ptr, xInt16Ptr, xInt16Ptr},
+		{true, zInt32Ptr, xInt32Ptr, xInt32Ptr},
+		{true, zInt64Ptr, xInt64Ptr, xInt64Ptr},
+		{true, zUintPtr, xUintPtr, xUintPtr},
+		{true, zUint8Ptr, xUint8Ptr, xUint8Ptr},
+		{true, zUint16Ptr, xUint16Ptr, xUint16Ptr},
+		{true, zUint32Ptr, xUint32Ptr, xUint32Ptr},
+		{true, zUint64Ptr, xUint64Ptr, xUint64Ptr},
+		{true, zUintptrPtr, xUintptrPtr, xUintptrPtr},
+		{true, zFloat32Ptr, xFloat32Ptr, xFloat32Ptr},
+		{true, zFloat64Ptr, xFloat64Ptr, xFloat64Ptr},
+		{true, zArray0Ptr, zArray0Ptr, zArray0Ptr},
+		{true, zArray1Ptr, xArray1Ptr, xArray1Ptr},
+		{true, zChanPtr, xChanPtr, xChanPtr},
+		{true, zFuncPtr, xFuncPtr, xFuncPtr},
+		{true, zIfacePtr, xIfacePtr, xIfacePtr},
+		{true, zMapPtr, xMapPtr, xMapPtr},
+		{true, zSlicePtr, xSlicePtr, xSlicePtr},
+		{true, zStringPtr, xStringPtr, xStringPtr},
+		{true, zStructPtr, xStructPtr, xStructPtr},
+		{false, xMyInt, xMyInt + 1, xMyInt + 2},
+		{false, xMyString, xMyString + "1", xMyString + "2"},
+		{true, xJSON, xJSON, xJSON},
+		{true, xJSONPtr, xJSONPtr, xJSONPtr},
+		{false, xTime, xTime.Add(time.Millisecond), xTime.Add(time.Second)},
+	}
 
+	t.Run("Less", func(tt *testing.T) {
+		t := check.T(tt)
+		todo := t.TODO()
+		t.Parallel()
+		for _, v := range cases {
+			actual, expected := v.min, v.max
+			if v.panic {
+				t.Panic(func() { t.Less(actual, expected) })
+				t.Panic(func() { t.LT(actual, expected) })
+				t.Panic(func() { t.LessOrEqual(actual, expected) })
+				t.Panic(func() { t.LE(actual, expected) })
+			} else {
+				t.Less(actual, expected)
+				t.LT(actual, expected)
+				t.LessOrEqual(actual, expected)
+				t.LessOrEqual(actual, actual)
+				t.LE(actual, expected)
+				t.LE(actual, actual)
+
+				actual, expected = expected, actual
+				todo.Less(actual, expected)
+				todo.LT(actual, expected)
+				todo.LessOrEqual(actual, expected)
+				todo.LE(actual, expected)
+			}
+		}
+	})
+
+	t.Run("Greater", func(tt *testing.T) {
+		t := check.T(tt)
+		todo := t.TODO()
+		t.Parallel()
+		for _, v := range cases {
+			actual, expected := v.min, v.max
+			if v.panic {
+				t.Panic(func() { t.Greater(actual, expected) })
+				t.Panic(func() { t.GT(actual, expected) })
+				t.Panic(func() { t.GreaterOrEqual(actual, expected) })
+				t.Panic(func() { t.GE(actual, expected) })
+			} else {
+				todo.Greater(actual, expected)
+				todo.GT(actual, expected)
+				todo.GreaterOrEqual(actual, expected)
+				todo.GE(actual, expected)
+
+				actual, expected = expected, actual
+				t.Greater(actual, expected)
+				t.GT(actual, expected)
+				t.GreaterOrEqual(actual, expected)
+				t.GreaterOrEqual(actual, actual)
+				t.GE(actual, expected)
+				t.GE(actual, actual)
+			}
+		}
+	})
+
+	t.Run("Between", func(tt *testing.T) {
+		t := check.T(tt)
+		todo := t.TODO()
+		t.Parallel()
+		for _, v := range cases {
+			min, mid, max := v.min, v.mid, v.max
+			if v.panic {
+				t.Panic(func() { t.Between(mid, min, max) })
+				t.Panic(func() { t.BetweenOrEqual(mid, min, max) })
+				t.Panic(func() { t.NotBetween(min, mid, max) })
+				t.Panic(func() { t.NotBetweenOrEqual(min, mid, max) })
+			} else {
+				t.Between(mid, min, max)
+				t.BetweenOrEqual(mid, min, max)
+				t.BetweenOrEqual(mid, mid, max)
+				t.BetweenOrEqual(mid, min, mid)
+				todo.NotBetween(mid, min, max)
+				todo.NotBetweenOrEqual(mid, min, max)
+				todo.NotBetweenOrEqual(mid, mid, max)
+				todo.NotBetweenOrEqual(mid, min, mid)
+				t.NotBetween(min, mid, max)
+				t.NotBetween(max, min, mid)
+				t.NotBetweenOrEqual(min, mid, max)
+				t.NotBetweenOrEqual(max, min, mid)
+				todo.Between(min, mid, max)
+				todo.Between(max, min, mid)
+				todo.BetweenOrEqual(min, mid, max)
+				todo.BetweenOrEqual(max, min, mid)
+			}
+		}
+	})
+}
+
+func TestCheckerApprox(t *testing.T) {
 	cases := []struct {
 		panic    bool
 		actual   interface{}
 		expected interface{}
+		delta    interface{}
+		smape    float64
 	}{
-		{true, zBool, xBool},
-		{false, xInt, xInt + 1},
-		{false, xInt8, xInt8 + 1},
-		{false, xInt16, xInt16 + 1},
-		{false, xInt32, xInt32 + 1},
-		{false, xInt64, xInt64 + 1},
-		{false, xUint, xUint + 1},
-		{false, xUint8, xUint8 + 1},
-		{false, xUint16, xUint16 + 1},
-		{false, xUint32, xUint32 + 1},
-		{false, xUint64, xUint64 + 1},
-		{false, xUintptr, xUintptr + 1},
-		{false, xFloat32, xFloat32 + 1},
-		{false, xFloat64, xFloat64 + 1},
-		{true, zArray0, zArray0},
-		{true, zArray1, xArray1},
-		{true, zChan, xChan},
-		{true, zFunc, xFunc},
-		{true, zIface, xIface},
-		{true, zMap, xMap},
-		{true, zSlice, xSlice},
-		{false, xString, xString + "1"},
-		{true, zStruct, xStruct},
-		{true, zBoolPtr, xBoolPtr},
-		{true, zIntPtr, xIntPtr},
-		{true, zInt8Ptr, xInt8Ptr},
-		{true, zInt16Ptr, xInt16Ptr},
-		{true, zInt32Ptr, xInt32Ptr},
-		{true, zInt64Ptr, xInt64Ptr},
-		{true, zUintPtr, xUintPtr},
-		{true, zUint8Ptr, xUint8Ptr},
-		{true, zUint16Ptr, xUint16Ptr},
-		{true, zUint32Ptr, xUint32Ptr},
-		{true, zUint64Ptr, xUint64Ptr},
-		{true, zUintptrPtr, xUintptrPtr},
-		{true, zFloat32Ptr, xFloat32Ptr},
-		{true, zFloat64Ptr, xFloat64Ptr},
-		{true, zArray0Ptr, zArray0Ptr},
-		{true, zArray1Ptr, xArray1Ptr},
-		{true, zChanPtr, xChanPtr},
-		{true, zFuncPtr, xFuncPtr},
-		{true, zIfacePtr, xIfacePtr},
-		{true, zMapPtr, xMapPtr},
-		{true, zSlicePtr, xSlicePtr},
-		{true, zStringPtr, xStringPtr},
-		{true, zStructPtr, xStructPtr},
-		{false, xMyInt, xMyInt + 1},
-		{false, xMyString, xMyString + "1"},
-		{true, xJSON, xJSON},
-		{true, xJSONPtr, xJSONPtr},
-		{false, xTime, xTime.Add(time.Second)},
+		{true, zBool, xBool, xBool, 0},
+		{false, xInt, xInt + 5, 7, 10.0},
+		{false, xInt8, xInt8 + 5, 7, 50.0},
+		{false, xInt16, xInt16 + 5, 7, 20.0},
+		{false, xInt32, xInt32 + 5, 7, 10.0},
+		{false, xInt64, xInt64 + 5, 7, 5.0},
+		{false, xUint, xUint + 5, uint(7), 6.0},
+		{false, xUint8, xUint8 + 5, uint(7), 30.0},
+		{false, xUint16, xUint16 + 5, uint(7), 20.0},
+		{false, xUint32, xUint32 + 5, uint(7), 10.0},
+		{false, xUint64, xUint64 + 5, uint(7), 5.0},
+		{false, xUintptr, xUintptr + 5, uint(7), 0.0000001},
+		{false, xFloat32, xFloat32 - 5, 7.0, 50.0},
+		{false, xFloat64, xFloat64 + 5, 7.0, 33.0},
+		{true, zArray0, zArray0, zArray0, 0},
+		{true, zArray1, xArray1, xArray1, 0},
+		{true, zChan, xChan, xChan, 0},
+		{true, zFunc, xFunc, xFunc, 0},
+		{true, zIface, xIface, xIface, 0},
+		{true, zMap, xMap, xMap, 0},
+		{true, zSlice, xSlice, xSlice, 0},
+		{true, xString, xString, xString, 0},
+		{true, zStruct, xStruct, xStruct, 0},
+		{true, zBoolPtr, xBoolPtr, xBoolPtr, 0},
+		{true, zIntPtr, xIntPtr, xIntPtr, 0},
+		{true, zInt8Ptr, xInt8Ptr, xInt8Ptr, 0},
+		{true, zInt16Ptr, xInt16Ptr, xInt16Ptr, 0},
+		{true, zInt32Ptr, xInt32Ptr, xInt32Ptr, 0},
+		{true, zInt64Ptr, xInt64Ptr, xInt64Ptr, 0},
+		{true, zUintPtr, xUintPtr, xUintPtr, 0},
+		{true, zUint8Ptr, xUint8Ptr, xUint8Ptr, 0},
+		{true, zUint16Ptr, xUint16Ptr, xUint16Ptr, 0},
+		{true, zUint32Ptr, xUint32Ptr, xUint32Ptr, 0},
+		{true, zUint64Ptr, xUint64Ptr, xUint64Ptr, 0},
+		{true, zUintptrPtr, xUintptrPtr, xUintptrPtr, 0},
+		{true, zFloat32Ptr, xFloat32Ptr, xFloat32Ptr, 0},
+		{true, zFloat64Ptr, xFloat64Ptr, xFloat64Ptr, 0},
+		{true, zArray0Ptr, zArray0Ptr, zArray0Ptr, 0},
+		{true, zArray1Ptr, xArray1Ptr, xArray1Ptr, 0},
+		{true, zChanPtr, xChanPtr, xChanPtr, 0},
+		{true, zFuncPtr, xFuncPtr, xFuncPtr, 0},
+		{true, zIfacePtr, xIfacePtr, xIfacePtr, 0},
+		{true, zMapPtr, xMapPtr, xMapPtr, 0},
+		{true, zSlicePtr, xSlicePtr, xSlicePtr, 0},
+		{true, zStringPtr, xStringPtr, xStringPtr, 0},
+		{true, zStructPtr, xStructPtr, xStructPtr, 0},
+		{false, xMyInt, xMyInt + 5, 7, 0.01},
+		{true, xMyString, xMyString, xMyString, 0},
+		{true, xJSON, xJSON, xJSON, 0},
+		{true, xJSONPtr, xJSONPtr, xJSONPtr, 0},
+		{false, xTime, xTime.Add(5 * time.Second), 7 * time.Second, 0},
 	}
-	for _, v := range cases {
-		if v.panic {
-			t.Panic(func() { t.Less(v.actual, v.expected) })
-			t.Panic(func() { t.LT(v.actual, v.expected) })
-			t.Panic(func() { t.LessOrEqual(v.actual, v.expected) })
-			t.Panic(func() { t.LE(v.actual, v.expected) })
-			t.Panic(func() { t.Greater(v.actual, v.expected) })
-			t.Panic(func() { t.GT(v.actual, v.expected) })
-			t.Panic(func() { t.GreaterOrEqual(v.actual, v.expected) })
-			t.Panic(func() { t.GE(v.actual, v.expected) })
-		} else {
-			t.Less(v.actual, v.expected)
-			t.LT(v.actual, v.expected)
-			t.LessOrEqual(v.actual, v.expected)
-			t.LessOrEqual(v.actual, v.actual)
-			t.LE(v.actual, v.expected)
-			t.LE(v.actual, v.actual)
-			todo.Greater(v.actual, v.expected)
-			todo.GT(v.actual, v.expected)
-			todo.GreaterOrEqual(v.actual, v.expected)
-			todo.GE(v.actual, v.expected)
 
-			v.actual, v.expected = v.expected, v.actual
-			t.Greater(v.actual, v.expected)
-			t.GT(v.actual, v.expected)
-			t.GreaterOrEqual(v.actual, v.expected)
-			t.GreaterOrEqual(v.actual, v.actual)
-			t.GE(v.actual, v.expected)
-			t.GE(v.actual, v.actual)
-			todo.Less(v.actual, v.expected)
-			todo.LT(v.actual, v.expected)
-			todo.LessOrEqual(v.actual, v.expected)
-			todo.LE(v.actual, v.expected)
+	t.Run("Delta", func(tt *testing.T) {
+		t := check.T(tt)
+		todo := t.TODO()
+		t.Parallel()
+		for _, v := range cases {
+			if v.panic {
+				t.Panic(func() { t.InDelta(v.actual, v.expected, v.delta) })
+				t.Panic(func() { t.NotInDelta(v.actual, v.expected, v.delta) })
+			} else {
+				t.InDelta(v.actual, v.expected, v.delta)
+				t.InDelta(v.expected, v.actual, v.delta)
+				todo.NotInDelta(v.actual, v.expected, v.delta)
+				todo.NotInDelta(v.expected, v.actual, v.delta)
+				t.NotInDelta(v.actual, v.expected, half(v.delta))
+				t.NotInDelta(v.expected, v.actual, half(v.delta))
+				todo.InDelta(v.actual, v.expected, half(v.delta))
+				todo.InDelta(v.expected, v.actual, half(v.delta))
+			}
 		}
+	})
+
+	t.Run("SMAPE", func(tt *testing.T) {
+		t := check.T(tt)
+		todo := t.TODO()
+		t.Parallel()
+		for _, v := range cases {
+			if v.panic || v.smape == 0 {
+				t.Panic(func() { t.InSMAPE(v.actual, v.expected, v.smape) })
+				t.Panic(func() { t.NotInSMAPE(v.actual, v.expected, v.smape) })
+			} else {
+				t.InSMAPE(v.actual, v.expected, v.smape)
+				t.InSMAPE(v.expected, v.actual, v.smape)
+				todo.NotInSMAPE(v.actual, v.expected, v.smape)
+				todo.NotInSMAPE(v.expected, v.actual, v.smape)
+				t.NotInSMAPE(v.actual, v.expected, half(v.smape).(float64))
+				t.NotInSMAPE(v.expected, v.actual, half(v.smape).(float64))
+				todo.InSMAPE(v.actual, v.expected, half(v.smape).(float64))
+				todo.InSMAPE(v.expected, v.actual, half(v.smape).(float64))
+			}
+		}
+	})
+}
+
+func half(v interface{}) interface{} {
+	switch v := v.(type) {
+	case time.Duration:
+		return v / 2
 	}
+	switch val := reflect.ValueOf(v); val.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return val.Int() / 2
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return val.Uint() / 2
+	case reflect.Float32, reflect.Float64:
+		return val.Float() / 2
+	}
+	panic(fmt.Sprintf("can't get half from %#v", v))
 }
 
 func TestCheckers(t *testing.T) {
@@ -1174,76 +1345,6 @@ func TestCheckers(t *testing.T) {
 		t.PanicNotMatch(func() { panic("") }, regexp.MustCompile(`.`))
 		t.PanicNotMatch(func() { panic("oops") }, `(?-i)Oops`)
 		todo.PanicNotMatch(func() { panic(t) }, `^&check.C{`)
-	})
-
-	between := []struct{ min, mid, max interface{} }{
-		{0, 1, 5},
-		{int8(-1), int8(0), int8(1)},
-		{'a', 'b', 'z'},
-		{2 << 59, 2 << 60, 2 << 61},
-		{byte(0), byte(254), byte(255)},
-		{uint64(0), uint64(1), uint64(5)},
-		{0.01, 0.1, 0.2},
-		{"a1", "a2", "b"},
-		{xTime, xTime.Add(time.Millisecond), xTime.Add(time.Second)},
-	}
-	t.Run("Between+BetweenOrEqual+NotBetween+NotBetweenOrEqual", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		for _, v := range between {
-			min, mid, max := v.min, v.mid, v.max
-			t.Between(mid, min, max)
-			t.BetweenOrEqual(mid, min, max)
-			t.BetweenOrEqual(mid, mid, max)
-			t.BetweenOrEqual(mid, min, mid)
-			t.NotBetween(min, mid, max)
-			t.NotBetween(max, min, mid)
-			t.NotBetweenOrEqual(min, mid, max)
-			t.NotBetweenOrEqual(max, min, mid)
-		}
-	})
-
-	inDelta := []struct{ actual, expected, delta interface{} }{
-		{-1, 0, 1},
-		{byte(92), byte(100), byte(10)},
-		{0.92, 1.0, 0.1},
-		{xTime, xTime.Add(5 * time.Second), 7 * time.Second},
-	}
-	t.Run("InDelta+NotInDelta", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		for _, v := range inDelta {
-			t.InDelta(v.actual, v.expected, v.delta)
-			t.InDelta(v.expected, v.actual, v.delta)
-			switch delta := v.delta.(type) {
-			case int:
-				t.NotInDelta(v.actual, v.expected, delta/2)
-			case byte:
-				t.NotInDelta(v.actual, v.expected, delta/2)
-			case float64:
-				t.NotInDelta(v.actual, v.expected, delta/2)
-			case time.Duration:
-				t.NotInDelta(v.actual, v.expected, delta/2)
-			}
-		}
-	})
-
-	inSMAPE := []struct {
-		actual, expected interface{}
-		smape            float64
-	}{
-		{-101, -100, 0.5},
-		{-99, -100, 0.7},
-		{byte(92), byte(100), 5},
-		{0.92, 1.0, 5},
-	}
-	t.Run("InSMAPE+NotInSMAPE", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		for _, v := range inSMAPE {
-			t.InSMAPE(v.actual, v.expected, v.smape)
-			t.NotInSMAPE(v.actual, v.expected, v.smape/2)
-		}
 	})
 
 	prefix := []struct{ actual, expected interface{} }{
