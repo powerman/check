@@ -1242,6 +1242,9 @@ func TestCheckerApprox(t *testing.T) {
 				todo.InSMAPE(v.expected, v.actual, half(v.smape).(float64))
 			}
 		}
+
+		t.InSMAPE(0, 0, 0.5)
+		t.InSMAPE(0.0, 0.0, 0.5)
 	})
 }
 
@@ -1486,6 +1489,7 @@ func TestJSONEqual(tt *testing.T) {
 	todo.JSONEqual(invalid, invalid)
 	todo.JSONEqual([]byte(invalid), []byte(invalid))
 	todo.JSONEqual(&invalidRaw, invalid)
+	todo.JSONEqual(&invalidRaw, invalid+"}")
 	todo.JSONEqual(invalidRaw, []byte(invalid))
 	t.JSONEqual(invalidRaw, invalidRaw)
 	t.JSONEqual(&invalidRaw, &invalidRaw)
