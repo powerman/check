@@ -125,6 +125,10 @@ func (t *C) report(ok bool, msg []interface{}, checker string, name []string, ar
 		return ok
 	}
 
+	if t.todo {
+		checker = "TODO " + checker
+	}
+
 	dump := make([]dump, 0, len(args))
 	for _, arg := range args {
 		dump = append(dump, newDump(arg))
