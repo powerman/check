@@ -1065,11 +1065,16 @@ func (t *C) HasPrefix(actual, expected interface{}, msg ...interface{}) bool {
 // isHasPrefix updates actual and expected to be a real string used for check,
 // to make dump easier to understand, but this result in losing type information.
 func isHasPrefix(actual, expected *interface{}) bool {
-	if !(stringify(actual) && stringify(expected)) {
+	if *actual == nil || *expected == nil {
 		return false
 	}
-	strActual, strExpected := (*actual).(string), (*expected).(string)
-	return strings.HasPrefix(strActual, strExpected)
+	if !stringify(actual) {
+		panic("actual is not a string, []byte, []rune, fmt.Stringer, error or nil")
+	}
+	if !stringify(expected) {
+		panic("expected is not a string, []byte, []rune, fmt.Stringer, error or nil")
+	}
+	return strings.HasPrefix((*actual).(string), (*expected).(string))
 }
 
 // NotHasPrefix checks for !strings.HasPrefix(actual, expected).
@@ -1101,11 +1106,16 @@ func (t *C) HasSuffix(actual, expected interface{}, msg ...interface{}) bool {
 // isHasSuffix updates actual and expected to be a real string used for check,
 // to make dump easier to understand, but this result in losing type information.
 func isHasSuffix(actual, expected *interface{}) bool {
-	if !(stringify(actual) && stringify(expected)) {
+	if *actual == nil || *expected == nil {
 		return false
 	}
-	strActual, strExpected := (*actual).(string), (*expected).(string)
-	return strings.HasSuffix(strActual, strExpected)
+	if !stringify(actual) {
+		panic("actual is not a string, []byte, []rune, fmt.Stringer, error or nil")
+	}
+	if !stringify(expected) {
+		panic("expected is not a string, []byte, []rune, fmt.Stringer, error or nil")
+	}
+	return strings.HasSuffix((*actual).(string), (*expected).(string))
 }
 
 // NotHasSuffix checks for !strings.HasSuffix(actual, expected).

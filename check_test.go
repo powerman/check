@@ -141,7 +141,7 @@ var (
 	xStructPtr  = &xStruct
 	// xUnsafePtr  *unsafe.Pointer  = &xUnsafe // don't like to import unsafe
 	xMyInt    myInt           = 31337
-	xMyString myString        = "x"
+	xMyString myString        = "xyz"
 	xJSON     json.RawMessage = []byte(`{"s":"ten","i":10}`)
 	xJSONPtr                  = &xJSON
 	xTime                     = time.Now()
@@ -891,6 +891,9 @@ func TestCheckerZero(tt *testing.T) {
 		t.NotZero(v.notzero, msg)
 		todo.NotZero(v.zero, msg)
 	}
+
+	t.Zero(nil)
+	todo.NotZero(nil)
 }
 
 func TestCheckerLen(tt *testing.T) {
@@ -902,6 +905,7 @@ func TestCheckerLen(tt *testing.T) {
 		actual interface{}
 		len    int
 	}{
+		{true, nil, 0},
 		{true, zBool, 0},
 		{true, zInt, 0},
 		{true, zInt8, 0},
@@ -993,6 +997,7 @@ func TestCheckerOrdered(t *testing.T) {
 		mid   interface{}
 		max   interface{}
 	}{
+		{true, nil, nil, nil},
 		{true, zBool, xBool, xBool},
 		{false, xInt, xInt + 1, xInt + 2},
 		{false, xInt8, xInt8 + 1, xInt8 + 2},
@@ -1143,6 +1148,7 @@ func TestCheckerApprox(t *testing.T) {
 		delta    interface{}
 		smape    float64
 	}{
+		{true, nil, nil, nil, 0},
 		{true, zBool, xBool, xBool, 0},
 		{false, xInt, xInt + 5, 7, 10.0},
 		{false, xInt8, xInt8 + 5, 7, 50.0},
@@ -1255,6 +1261,154 @@ func half(v interface{}) interface{} {
 	panic(fmt.Sprintf("can't get half from %#v", v))
 }
 
+func TestCheckerSubstring(t *testing.T) {
+	cases := []struct {
+		panic  bool
+		actual interface{}
+		prefix string
+		suffix string
+	}{
+		{true, xBool, "", ""},
+		{true, xInt, "", ""},
+		{true, xInt8, "", ""},
+		{true, xInt16, "", ""},
+		{true, xInt32, "", ""},
+		{true, xInt64, "", ""},
+		{true, xUint, "", ""},
+		{true, xUint8, "", ""},
+		{true, xUint16, "", ""},
+		{true, xUint32, "", ""},
+		{true, xUint64, "", ""},
+		{true, xUintptr, "", ""},
+		{true, xFloat32, "", ""},
+		{true, xFloat64, "", ""},
+		{true, zArray0, "", ""},
+		{true, xArray1, "", ""},
+		{true, xChan, "", ""},
+		{true, xFunc, "", ""},
+		{true, xIface, "", ""},
+		{true, xMap, "", ""},
+		{true, xSlice, "", ""},
+		{false, xString, "<ni", "il>"},
+		{true, xStruct, "", ""},
+		{true, xBoolPtr, "", ""},
+		{true, xIntPtr, "", ""},
+		{true, xInt8Ptr, "", ""},
+		{true, xInt16Ptr, "", ""},
+		{true, xInt32Ptr, "", ""},
+		{true, xInt64Ptr, "", ""},
+		{true, xUintPtr, "", ""},
+		{true, xUint8Ptr, "", ""},
+		{true, xUint16Ptr, "", ""},
+		{true, xUint32Ptr, "", ""},
+		{true, xUint64Ptr, "", ""},
+		{true, xUintptrPtr, "", ""},
+		{true, xFloat32Ptr, "", ""},
+		{true, xFloat64Ptr, "", ""},
+		{true, zArray0Ptr, "", ""},
+		{true, xArray1Ptr, "", ""},
+		{true, xChanPtr, "", ""},
+		{true, xFuncPtr, "", ""},
+		{true, xIfacePtr, "", ""},
+		{true, xMapPtr, "", ""},
+		{true, xSlicePtr, "", ""},
+		{true, xStringPtr, "", ""},
+		{true, xStructPtr, "", ""},
+		{true, xMyInt, "", ""},
+		{false, xMyString, "xy", "yz"},
+		{false, xJSON, "{", "}"},
+		{true, xJSONPtr, "", ""},
+		{false, zTime, "0001-01-01", "UTC"},
+		{false, []byte("String"), "Str", "ing"},
+		{false, []rune("Symbol"), "Sym", "bol"},
+		{false, time.Sunday, "Sun", "day"},
+		{false, io.EOF, "EO", "OF"},
+	}
+
+	substrings := []struct {
+		prefix interface{}
+		suffix interface{}
+	}{
+		{"Sunday", "Monday"},
+		{[]byte("Sunday"), []byte("Monday")},
+		{[]rune("Sunday"), []rune("Monday")},
+		{time.Sunday, time.Monday},
+		{errors.New("Sunday"), errors.New("Monday")},
+	}
+
+	t.Run("HasPrefix", func(tt *testing.T) {
+		t := check.T(tt)
+		todo := t.TODO()
+		t.Parallel()
+
+		for i, v := range cases {
+			msg := fmt.Sprintf("case %d: %#v, %#v, %#v", i, v.actual, v.prefix, v.suffix)
+			if v.panic {
+				t.Panic(func() { t.HasPrefix(v.actual, v.prefix) }, msg)
+				t.Panic(func() { t.NotHasPrefix(v.actual, v.prefix) }, msg)
+				t.Panic(func() { t.HasPrefix("", v.actual) }, msg)
+				t.Panic(func() { t.NotHasPrefix("", v.actual) }, msg)
+			} else {
+				t.HasPrefix(v.actual, v.prefix, msg)
+				todo.HasPrefix(v.actual, v.suffix, msg)
+				t.NotHasPrefix(v.actual, v.suffix, msg)
+				todo.NotHasPrefix(v.actual, v.prefix, msg)
+			}
+		}
+
+		for _, v := range substrings {
+			t.HasPrefix("Sunday Monday", v.prefix)
+			todo.NotHasPrefix("Sunday Monday", v.prefix)
+		}
+
+		todo.HasPrefix(nil, "")
+		t.NotHasPrefix(nil, "")
+		todo.HasPrefix("", nil)
+		t.NotHasPrefix("", nil)
+
+		t.HasPrefix("", "")
+		todo.NotHasPrefix("", "")
+		t.HasPrefix("x", "")
+		todo.NotHasPrefix("x", "")
+	})
+
+	t.Run("HasSuffix", func(tt *testing.T) {
+		t := check.T(tt)
+		todo := t.TODO()
+		t.Parallel()
+
+		for i, v := range cases {
+			msg := fmt.Sprintf("case %d: %#v, %#v, %#v", i, v.actual, v.suffix, v.suffix)
+			if v.panic {
+				t.Panic(func() { t.HasSuffix(v.actual, v.suffix) }, msg)
+				t.Panic(func() { t.NotHasSuffix(v.actual, v.suffix) }, msg)
+				t.Panic(func() { t.HasSuffix("", v.actual) }, msg)
+				t.Panic(func() { t.NotHasSuffix("", v.actual) }, msg)
+			} else {
+				t.HasSuffix(v.actual, v.suffix, msg)
+				todo.HasSuffix(v.actual, v.prefix, msg)
+				t.NotHasSuffix(v.actual, v.prefix, msg)
+				todo.NotHasSuffix(v.actual, v.suffix, msg)
+			}
+		}
+
+		for _, v := range substrings {
+			t.HasSuffix("Sunday Monday", v.suffix)
+			todo.NotHasSuffix("Sunday Monday", v.suffix)
+		}
+
+		todo.HasSuffix(nil, "")
+		t.NotHasSuffix(nil, "")
+		todo.HasSuffix("", nil)
+		t.NotHasSuffix("", nil)
+
+		t.HasSuffix("", "")
+		todo.NotHasSuffix("", "")
+		t.HasSuffix("x", "")
+		todo.NotHasSuffix("x", "")
+	})
+}
+
 func TestCheckers(t *testing.T) {
 	t.Run("Err", func(tt *testing.T) {
 		t := check.T(tt)
@@ -1345,38 +1499,6 @@ func TestCheckers(t *testing.T) {
 		t.PanicNotMatch(func() { panic("") }, regexp.MustCompile(`.`))
 		t.PanicNotMatch(func() { panic("oops") }, `(?-i)Oops`)
 		todo.PanicNotMatch(func() { panic(t) }, `^&check.C{`)
-	})
-
-	prefix := []struct{ actual, expected interface{} }{
-		{myString("abcde"), []byte("ab")},
-		{[]rune("abcde"), myString("ab")},
-		{time.Time{}, errors.New("0001-01-01")},
-	}
-	t.Run("HasPrefix+NotHasPrefix", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.HasPrefix("", myString(""))
-		for _, v := range prefix {
-			actual, expected := v.actual, v.expected
-			t.HasPrefix(actual, expected)
-			t.NotHasPrefix(expected, actual)
-		}
-	})
-
-	suffix := []struct{ actual, expected interface{} }{
-		{myString("abcde"), []byte("de")},
-		{[]rune("abcde"), myString("de")},
-		{time.Time{}, errors.New("UTC")},
-	}
-	t.Run("HasSuffix+NotHasSuffix", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.HasSuffix("", myString(""))
-		for _, v := range suffix {
-			actual, expected := v.actual, v.expected
-			t.HasSuffix(actual, expected)
-			t.NotHasSuffix(expected, actual)
-		}
 	})
 
 	t.Run("JSONEqual", func(tt *testing.T) {
