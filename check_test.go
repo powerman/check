@@ -1687,13 +1687,13 @@ func TestCheckers(t *testing.T) {
 		todo.PanicNotMatch(func() { panic(t) }, `^&check.C{`)
 	})
 
-	t.Run("Implements+NotImplements", func(tt *testing.T) {
+	t.Run("Implements", func(tt *testing.T) {
 		t := check.T(tt)
 		t.Parallel()
-		var reader io.Reader = os.Stdin
+
 		t.Implements(t, (*testing.TB)(nil))
 		t.Implements(os.Stdin, (*io.Reader)(nil))
-		t.Implements(os.Stdin, &reader)
+		t.Implements(os.Stdin, &xIface)
 		t.Implements(*os.Stdin, (*io.Reader)(nil))
 		t.Implements(time.Time{}, (*fmt.Stringer)(nil))
 		t.Implements(&time.Time{}, (*fmt.Stringer)(nil))
