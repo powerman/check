@@ -1409,6 +1409,103 @@ func TestCheckerSubstring(t *testing.T) {
 	})
 }
 
+func TestJSONEqual(tt *testing.T) {
+	t := check.T(tt)
+	todo := t.TODO()
+
+	cases := []struct {
+		panic bool
+		json  interface{}
+	}{
+		{false, nil},
+		{true, zBool},
+		{true, zInt},
+		{true, zInt8},
+		{true, zInt16},
+		{true, zInt32},
+		{true, zInt64},
+		{true, zUint},
+		{true, zUint8},
+		{true, zUint16},
+		{true, zUint32},
+		{true, zUint64},
+		{true, zUintptr},
+		{true, zFloat32},
+		{true, zFloat64},
+		{true, zArray0},
+		{true, zArray1},
+		{true, zChan},
+		{true, zFunc},
+		{false, zIface}, // nil
+		{true, zMap},
+		{true, zSlice},
+		{false, zString},
+		{true, zStruct},
+		{true, zBoolPtr},
+		{true, zIntPtr},
+		{true, zInt8Ptr},
+		{true, zInt16Ptr},
+		{true, zInt32Ptr},
+		{true, zInt64Ptr},
+		{true, zUintPtr},
+		{true, zUint8Ptr},
+		{true, zUint16Ptr},
+		{true, zUint32Ptr},
+		{true, zUint64Ptr},
+		{true, zUintptrPtr},
+		{true, zFloat32Ptr},
+		{true, zFloat64Ptr},
+		{true, zArray0Ptr},
+		{true, zArray1Ptr},
+		{true, zChanPtr},
+		{true, zFuncPtr},
+		{true, zIfacePtr},
+		{true, zMapPtr},
+		{true, zSlicePtr},
+		{true, zStringPtr},
+		{true, zStructPtr},
+		{true, zMyInt},
+		{false, zMyString},
+		{false, zJSON},
+		{false, zJSONPtr},
+		{true, zTime},
+		{false, []byte(nil)},
+		{false, []byte{}},
+	}
+	for i, v := range cases {
+		if v.panic {
+			t.Panic(func() { t.JSONEqual(v.json, `{}`, i) })
+			t.Panic(func() { t.JSONEqual(`{}`, v.json) })
+		} else {
+			todo.JSONEqual(v.json, v.json)
+		}
+	}
+
+	invalid := `{"a":1,"b":[2]`
+	invalidRaw := json.RawMessage(invalid)
+	todo.JSONEqual(invalid, invalid)
+	todo.JSONEqual([]byte(invalid), []byte(invalid))
+	todo.JSONEqual(&invalidRaw, invalid)
+	todo.JSONEqual(invalidRaw, []byte(invalid))
+	t.JSONEqual(invalidRaw, invalidRaw)
+	t.JSONEqual(&invalidRaw, &invalidRaw)
+	t.JSONEqual(&invalidRaw, invalidRaw)
+	t.JSONEqual(invalidRaw, &invalidRaw)
+
+	validRaw := json.RawMessage(invalid + "}")
+	valid := []interface{}{
+		`{ "b" : [ 2],"a" :1}  `,
+		[]byte(`  { "b": [2 ],"a": 1}`),
+		validRaw,
+		&validRaw,
+	}
+	for _, actual := range valid {
+		for _, expected := range valid {
+			t.JSONEqual(actual, expected)
+		}
+	}
+}
+
 func TestCheckers(t *testing.T) {
 	t.Run("Err", func(tt *testing.T) {
 		t := check.T(tt)
@@ -1499,15 +1596,6 @@ func TestCheckers(t *testing.T) {
 		t.PanicNotMatch(func() { panic("") }, regexp.MustCompile(`.`))
 		t.PanicNotMatch(func() { panic("oops") }, `(?-i)Oops`)
 		todo.PanicNotMatch(func() { panic(t) }, `^&check.C{`)
-	})
-
-	t.Run("JSONEqual", func(tt *testing.T) {
-		t := check.T(tt)
-		t.Parallel()
-		t.JSONEqual(`{ "a" : [3, false],"z":42 }`, []byte(`{"z": 42,"a":[3  ,  false ]}`))
-		t.JSONEqual(`true`, ` true `)
-		raw := json.RawMessage(`true`)
-		t.JSONEqual(&raw, raw)
 	})
 
 	t.Run("HasType+NotHasType", func(tt *testing.T) {

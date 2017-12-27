@@ -1138,8 +1138,8 @@ func (t *C) NotHasSuffix(actual, expected interface{}, msg ...interface{}) bool 
 //   - *json.RawMessage
 //   - nil
 //
-// In case any of actual or expected is nil, "" or (for string, []byte or
-// []rune) is invalid JSON - check will fail.
+// In case any of actual or expected is nil or empty or (for string or
+// []byte) is invalid JSON - check will fail.
 func (t *C) JSONEqual(actual, expected interface{}, msg ...interface{}) bool {
 	t.Helper()
 	ok := isJSONEqual(actual, expected)
@@ -1180,7 +1180,7 @@ func jsonify(arg interface{}) json.RawMessage {
 	if err != nil {
 		return nil
 	}
-	buf, err = json.MarshalIndent(v, "", "  ")
+	buf, err = json.Marshal(v)
 	if err != nil {
 		return nil
 	}
