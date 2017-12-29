@@ -94,27 +94,27 @@ func (t *C) TODO() *C {
 }
 
 func (t *C) pass() {
-	stats.Lock()
-	defer stats.Unlock()
+	statsMu.Lock()
+	defer statsMu.Unlock()
 
-	if stats.counter[t.T] == nil {
-		stats.counter[t.T] = &counter{name: t.Name()}
+	if stats[t.T] == nil {
+		stats[t.T] = newTestStat(t.Name(), false)
 	}
 	if t.todo {
-		stats.counter[t.T].forged++
+		stats[t.T].forged.value++
 	} else {
-		stats.counter[t.T].passed++
+		stats[t.T].passed.value++
 	}
 }
 
 func (t *C) fail() {
-	stats.Lock()
-	defer stats.Unlock()
+	statsMu.Lock()
+	defer statsMu.Unlock()
 
-	if stats.counter[t.T] == nil {
-		stats.counter[t.T] = &counter{name: t.Name()}
+	if stats[t.T] == nil {
+		stats[t.T] = newTestStat(t.Name(), false)
 	}
-	stats.counter[t.T].failed++
+	stats[t.T].failed.value++
 }
 
 func (t *C) report(ok bool, msg []interface{}, checker string, name []string, args []interface{}) bool {

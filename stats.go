@@ -4,47 +4,54 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 )
 
 type counter struct {
-	name         string
-	passed       int
-	forged       int
-	failed       int
-	force        bool
-	passedDigits int
-	forgedDigits int
-	failedDigits int
+	name  string
+	value int
+	force bool
+	color string
+	size  int
 }
 
-func (c counter) report() {
-	var passed, forged, failed string
-	if c.passed != 0 || c.force {
-		passed = fmt.Sprintf("%s%*d passed%s", ansiGreen, c.passedDigits, c.passed, ansiReset)
-	}
-	if c.forged != 0 || c.force {
-		color := ansiYellow
-		if c.forged == 0 {
+func (c counter) String() (s string) {
+	if c.value != 0 || c.force {
+		color := c.color
+		if c.value == 0 {
 			color = ansiReset
 		}
-		forged = fmt.Sprintf("%s%*d todo%s", color, c.forgedDigits, c.forged, ansiReset)
+		s = fmt.Sprintf("%s%*d %s%s", color, c.size, c.value, c.name, ansiReset)
+	} else {
+		s = strings.Repeat(" ", c.size+1+len(c.name))
 	}
-	if c.failed != 0 || c.force {
-		color := ansiRed
-		if c.failed == 0 {
-			color = ansiReset
-		}
-		failed = fmt.Sprintf("%s%*d failed%s", color, c.failedDigits, c.failed, ansiReset)
-	}
-	fmt.Printf("  checks:  %10s  %7s  %10s\t%s\n", passed, forged, failed, c.name)
+	return s
 }
 
-var stats = struct {
-	sync.Mutex
-	counter map[*testing.T]*counter
-}{sync.Mutex{}, map[*testing.T]*counter{}}
+type testStat struct {
+	name   string
+	passed counter
+	forged counter
+	failed counter
+}
+
+func newTestStat(desc string, force bool) *testStat {
+	return &testStat{
+		name:   desc,
+		passed: counter{force: force, name: "passed", color: ansiGreen},
+		forged: counter{force: force, name: "todo", color: ansiYellow},
+		failed: counter{force: force, name: "failed", color: ansiRed},
+	}
+}
+
+func (c testStat) String() string {
+	return fmt.Sprintf("checks:  %s  %s  %s\t%s", c.passed, c.forged, c.failed, c.name)
+}
+
+var statsMu sync.Mutex
+var stats = map[*testing.T]*testStat{}
 
 // Report output statistics about passed/failed checks.
 // It should be called from TestMain after m.Run(), for ex.:
@@ -57,32 +64,32 @@ var stats = struct {
 //
 // If this is all you need - just use TestMain instead.
 func Report() {
-	stats.Lock()
-	defer stats.Unlock()
+	statsMu.Lock()
+	defer statsMu.Unlock()
 
-	total := counter{name: "(total)", force: true}
-	ts := make([]*testing.T, 0, len(stats.counter))
-	for t := range stats.counter {
+	total := newTestStat("(total)", true)
+	ts := make([]*testing.T, 0, len(stats))
+	for t := range stats {
 		ts = append(ts, t)
-		total.passed += stats.counter[t].passed
-		total.forged += stats.counter[t].forged
-		total.failed += stats.counter[t].failed
+		total.passed.value += stats[t].passed.value
+		total.forged.value += stats[t].forged.value
+		total.failed.value += stats[t].failed.value
 	}
 
-	total.passedDigits = digits(total.passed)
-	total.forgedDigits = digits(total.forged)
-	total.failedDigits = digits(total.failed)
+	total.passed.size = digits(total.passed.value)
+	total.forged.size = digits(total.forged.value)
+	total.failed.size = digits(total.failed.value)
 
-	sort.Slice(ts, func(a, b int) bool { return ts[a].Name() < ts[b].Name() })
-	for _, t := range ts {
-		if testing.Verbose() {
-			stats.counter[t].passedDigits = total.passedDigits
-			stats.counter[t].forgedDigits = total.forgedDigits
-			stats.counter[t].failedDigits = total.failedDigits
-			stats.counter[t].report()
+	if testing.Verbose() {
+		sort.Slice(ts, func(a, b int) bool { return ts[a].Name() < ts[b].Name() })
+		for _, t := range ts {
+			stats[t].passed.size = total.passed.size
+			stats[t].forged.size = total.forged.size
+			stats[t].failed.size = total.failed.size
+			fmt.Printf("  %s\n", stats[t])
 		}
 	}
-	total.report()
+	fmt.Printf("  %s\n", total)
 }
 
 // TestMain provides same default implementation as used by testing
