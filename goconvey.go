@@ -12,7 +12,7 @@ import (
 
 var errNoGoConvey = errors.New("goconvey not detected")
 
-func reportToGoConvey(actual, expected, failure fmt.Stringer) error {
+func reportToGoConvey(actual, expected, failure string) error {
 	if !flags.detect().conveyJSON {
 		return errNoGoConvey
 	}
@@ -24,9 +24,9 @@ func reportToGoConvey(actual, expected, failure fmt.Stringer) error {
 		Assertions: []*reporting.AssertionResult{{
 			File:     testFile,
 			Line:     testLine,
-			Expected: expected.String(),
-			Actual:   actual.String(),
-			Failure:  failure.String(),
+			Expected: expected,
+			Actual:   actual,
+			Failure:  failure,
 		}},
 	}
 

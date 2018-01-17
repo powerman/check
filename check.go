@@ -139,26 +139,34 @@ func (t *C) report(ok bool, msg []interface{}, checker string, name []string, ar
 		format(msg...),
 		ansiYellow, checker, ansiReset,
 	)
+	failureShort := failure.String()
+	// Reverse order to show Actual: last.
+	for i := len(dump) - 1; i >= 0; i-- {
+		fmt.Fprintf(failure, "%-10s", name[i]+":")
+		switch name[i] {
+		case nameActual:
+			fmt.Fprint(failure, ansiRed)
+		default:
+			fmt.Fprint(failure, ansiGreen)
+		}
+		fmt.Fprintf(failure, "%s%s", dump[i], ansiReset)
+	}
+	failureLong := failure.String()
 
 	wantDiff := len(dump) == 2 && name[0] == nameActual && name[1] == nameExpected
-	if wantDiff && reportToGoConvey(dump[0], dump[1], failure) == nil {
-		t.Fail()
-	} else {
-		// Reverse order to show Actual: last.
-		for i := len(dump) - 1; i >= 0; i-- {
-			fmt.Fprintf(failure, "%-10s", name[i]+":")
-			switch name[i] {
-			case nameActual:
-				fmt.Fprint(failure, ansiRed)
-			default:
-				fmt.Fprint(failure, ansiGreen)
-			}
-			fmt.Fprintf(failure, "%s%s", dump[i], ansiReset)
-		}
-		if wantDiff {
+	if wantDiff {
+		if reportToGoConvey(dump[0].String(), dump[1].String(), failureShort) == nil {
+			t.Fail()
+		} else {
 			fmt.Fprintf(failure, "\n%s", colouredDiff(dump[0].diff(dump[1])))
+			t.Errorf("%s\n", failure)
 		}
-		t.Errorf("%s\n", failure)
+	} else {
+		if reportToGoConvey("", "", failureLong) == nil {
+			t.Fail()
+		} else {
+			t.Errorf("%s\n", failure)
+		}
 	}
 
 	t.fail()
