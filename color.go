@@ -15,9 +15,14 @@ var (
 )
 
 func init() {
-	if !(isTerminal() && strings.Contains(os.Getenv("TERM"), "color")) {
+	if !wantColor() {
 		ansiGreen, ansiYellow, ansiRed, ansiReset = "", "", "", ""
 	}
+}
+
+func wantColor() bool {
+	return strings.Contains(os.Getenv("TERM"), "color") &&
+		(isTerminal() || os.Getenv("GO_TEST_COLOR") != "")
 }
 
 func isTerminal() bool {

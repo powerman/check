@@ -99,6 +99,13 @@
 // ★ It will panic when called with arg of wrong type - because this means
 // bug in your test.
 //
+// ★ If you don't see colors in `go test` output it may happens because of
+// two reasons: either your $TERM doesn't contain substring "color" or
+// you're running `go test path/to/your/package`. To force colored output
+// in last case just set this environment variable:
+//
+//	export GO_TEST_COLOR=1
+//
 // Contents
 //
 // There are few special functions (assertion, custom checkers, etc.).
