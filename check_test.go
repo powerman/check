@@ -1249,8 +1249,7 @@ func TestCheckerApprox(t *testing.T) {
 }
 
 func half(v interface{}) interface{} {
-	switch v := v.(type) {
-	case time.Duration:
+	if v, ok := v.(time.Duration); ok {
 		return v / 2
 	}
 	switch val := reflect.ValueOf(v); val.Kind() {
@@ -1336,7 +1335,7 @@ func TestCheckerSubstring(t *testing.T) {
 		{[]byte("Sunday"), []byte("Monday")},
 		{[]rune("Sunday"), []rune("Monday")},
 		{time.Sunday, time.Monday},
-		{errors.New("Sunday"), errors.New("Monday")},
+		{errors.New("Sunday"), errors.New("Monday")}, // nolint:golint
 	}
 
 	t.Run("HasPrefix", func(tt *testing.T) {
