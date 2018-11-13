@@ -220,11 +220,12 @@ func (t *C) report2(actual, expected interface{}, msg []interface{}, ok bool) bo
 func (t *C) report3(actual, expected1, expected2 interface{}, msg []interface{}, ok bool) bool {
 	t.Helper()
 	checker, arg2Name, arg3Name := callerFuncName(1), "arg1", "arg2"
-	if strings.Contains(checker, "Between") {
+	switch {
+	case strings.Contains(checker, "Between"):
 		arg2Name, arg3Name = "Min", "Max"
-	} else if strings.Contains(checker, "Delta") {
+	case strings.Contains(checker, "Delta"):
 		arg2Name, arg3Name = nameExpected, "Delta"
-	} else if strings.Contains(checker, "SMAPE") {
+	case strings.Contains(checker, "SMAPE"):
 		arg2Name, arg3Name = nameExpected, "SMAPE"
 	}
 	return t.report(ok, msg,
@@ -398,8 +399,9 @@ func isEqual(actual, expected interface{}) bool {
 	switch actual := actual.(type) {
 	case time.Time:
 		return actual.Equal(expected.(time.Time))
+	default:
+		return actual == expected
 	}
-	return actual == expected
 }
 
 // EQ is a synonym for Equal.
