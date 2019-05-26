@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	pkgerrors "github.com/pkg/errors"
+
 	"github.com/powerman/check"
 )
 
@@ -1619,6 +1621,13 @@ func TestCheckers(t *testing.T) {
 			{true, true, false, &net.OpError{}, &net.OpError{}},
 			{true, true, true, io.EOF, io.EOF},
 			{true, true, false, io.EOF, errors.New("EOF")},
+			{false, false, false, pkgerrors.New("EOF"), io.EOF},
+			{false, false, false, pkgerrors.New("EOF"), errors.New("EOF")},
+			{true, false, false, pkgerrors.New("EOF"), pkgerrors.New("EOF")},
+			{true, false, false, pkgerrors.WithStack(io.EOF), io.EOF},
+			{true, false, false, pkgerrors.Wrap(io.EOF, "wrapped"), io.EOF},
+			{true, false, false, pkgerrors.Wrap(io.EOF, "wrapped"), errors.New("EOF")},
+			{true, false, false, pkgerrors.Wrap(pkgerrors.Wrap(io.EOF, "wrapped"), "wrapped2"), io.EOF},
 			{false, false, false, io.EOF, &myError{"EOF"}},
 		}
 		for _, v := range cases {

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -660,22 +662,30 @@ func (t *C) NotLen(actual interface{}, expected int, msg ...interface{}) bool {
 
 // Err checks is actual error is the same as expected error.
 //
+// It tries to unwrap actual before checking using
+// github.com/pkg/errors.Cause().
+//
 // They may be a different instances, but must have same type and value.
 //
 // Checking for nil is okay, but using Nil(actual) instead is more clean.
 func (t *C) Err(actual, expected error, msg ...interface{}) bool {
 	t.Helper()
+	actual = errors.Cause(actual)
 	return t.report2(actual, expected, msg,
 		fmt.Sprintf("%#v", actual) == fmt.Sprintf("%#v", expected))
 }
 
 // NotErr checks is actual error is not the same as expected error.
 //
+// It tries to unwrap actual before checking using
+// github.com/pkg/errors.Cause().
+//
 // They must have either different types or values (or one should be nil).
 // Different instances with same type and value will be considered the
 // same error, and so is both nil.
 func (t *C) NotErr(actual, expected error, msg ...interface{}) bool {
 	t.Helper()
+	actual = errors.Cause(actual)
 	return t.report1(actual, msg,
 		fmt.Sprintf("%#v", actual) != fmt.Sprintf("%#v", expected))
 }
