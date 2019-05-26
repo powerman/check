@@ -127,11 +127,11 @@ func TestDump(tt *testing.T) {
 	}
 
 	for _, v := range cases {
-		old, new := spewCfg.Sdump(v.i), newDump(v.i).String()
+		dumpOld, dumpNew := spewCfg.Sdump(v.i), newDump(v.i).String()
 		if v.improved {
-			t.NotEqual(new, old)
+			t.NotEqual(dumpNew, dumpOld)
 		} else {
-			t.Equal(new, old)
+			t.Equal(dumpNew, dumpOld)
 		}
 	}
 }
