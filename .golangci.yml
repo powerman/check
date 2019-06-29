@@ -83,6 +83,14 @@ linters-settings:
   govet:
     # report about shadowed variables
     check-shadowing: true
+
+    # settings per analyzer
+    settings:
+      printf: # analyzer name, run `go tool vet help` to see all analyzers
+        funcs: # run `go tool vet help printf` to see available settings for `printf` analyzer
+          # - (github.com/powerman/structlog.Logger).Fatalf
+          # - (github.com/powerman/structlog.Logger).Panicf
+          # - (github.com/powerman/structlog.Logger).Printf
   golint:
     # minimal confidence for issues, default is 0.8
     # min-confidence: 0.8
@@ -164,6 +172,7 @@ linters-settings:
       - ptrToRefParam
       - typeUnparen # false positive
       - commentedOutCode
+      - yodaStyleExpr
 
     # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint` run to see all tags and checks.
     # Empty list by default. See https://github.com/go-critic/go-critic#usage -> section "Tags".
@@ -208,7 +217,7 @@ issues:
     - "declaration of \"(log|err|ctx)\" shadows"
     - "Potential file inclusion via variable" # [DEFAULT] gosec: False positive is triggered by 'src, err := ioutil.ReadFile(filename)'
 
-  # Excluding configuration per-path and per-linter
+  # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go
@@ -238,16 +247,16 @@ issues:
     #   text: "weak cryptographic primitive"
     #   linters:
     #     - gosec
-    # - path: internal/hmac/
-    #   text: "Write\\` is not checked"
-    #   linters:
-    #     - errcheck
 
-    # Ease linting on benchmarking code.
-    # - path: cmd/stun-bench/
-    #   linters:
-    #     - gosec
-    #     - errcheck
+    # Exclude some staticcheck messages
+    # - linters:
+    #     - staticcheck
+    #   text: "SA9003:"
+
+    # Exclude lll issues for long lines with go:generate
+    # - linters:
+    #     - lll
+    #   source: "^//go:generate "
 
   # Independently from option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all
@@ -256,7 +265,7 @@ issues:
   exclude-use-default: false
 
   # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
-  max-per-linter: 0
+  max-issues-per-linter: 0
 
   # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
   max-same-issues: 0
