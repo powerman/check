@@ -100,10 +100,10 @@ linters-settings:
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
-    # local-prefixes: github.com/mtgroupit
+    # local-prefixes: github.com/powerman
   gocyclo:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
-    min-complexity: 12
+    min-complexity: 15
   maligned:
     # print struct with more effective memory layout or not, false by default
     suggest-new: true
@@ -119,7 +119,7 @@ linters-settings:
     list-type: blacklist
     include-go-root: true
     packages:
-      - log
+      # - log
   misspell:
     # Correct spellings using locale preferences for US or UK.
     # Default is to use a neutral variety of English.
@@ -169,10 +169,10 @@ linters-settings:
     disabled-checks:
       - hugeParam # premature optimization
       - paramTypeCombine # questionable
+      - yodaStyleExpr # questionable
       - ptrToRefParam
       - typeUnparen # false positive
       - commentedOutCode
-      - yodaStyleExpr
 
     # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint` run to see all tags and checks.
     # Empty list by default. See https://github.com/go-critic/go-critic#usage -> section "Tags".
@@ -220,26 +220,28 @@ issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     # Exclude some linters from running on tests files.
-    - path: _test\.go
+    - path: _test\.go|testing\.go
       linters:
         - gocyclo
+        - bodyclose
         - errcheck
         - dupl
         - gosec
         - gochecknoinits
         - gochecknoglobals
+        - maligned
         - scopelint
 
     # Ease some gocritic warnings on test files.
-    - path: _test\.go
-      text: "(unnamedResult|exitAfterDefer)"
+    - path: _test\.go|testing\.go
+      text: "(unnamedResult|exitAfterDefer|rangeValCopy)"
       linters:
         - gocritic
 
     # Package def is designed to contain global constants.
-    - path: internal/def/
-      linters:
-        - gochecknoglobals
+    # - path: internal/def/
+    #   linters:
+    #     - gochecknoglobals
 
     # Exclude known linters from partially hard-vendored code,
     # which is impossible to exclude via "nolint" comments.
