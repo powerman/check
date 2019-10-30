@@ -96,8 +96,8 @@
 // ★ If you need custom check, which isn't available out-of-box - see
 // Should checker, it'll let you plug in your own checker with ease.
 //
-// ★ It will panic when called with arg of wrong type - because this means
-// bug in your test.
+// ★ It will panic when called with arg of wrong type - because this
+// means bug in your test.
 //
 // ★ If you don't see colors in `go test` output it may happens because of
 // two reasons: either your $TERM doesn't contain substring "color" or

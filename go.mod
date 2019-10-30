@@ -1,5 +1,7 @@
 module github.com/powerman/check
 
+go 1.13
+
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c // indirect

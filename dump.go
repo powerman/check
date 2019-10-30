@@ -66,7 +66,7 @@ func (v dump) diff(expected dump) string {
 // - []byte: same as string instead of hexdump for valid utf8
 // - []rune: use quoted char instead of number for valid runes in list
 // - json.RawMessage: indent, then same as string
-func newDump(i interface{}) (d dump) { // nolint:gocyclo
+func newDump(i interface{}) (d dump) { // nolint:gocyclo,gocognit,funlen
 	d.dump = spewCfg.Sdump(i)
 
 	if i == nil {
