@@ -1623,31 +1623,40 @@ func TestCheckers(t *testing.T) {
 			{true, true, false, io.EOF, errors.New("EOF")},
 			{false, false, false, pkgerrors.New("EOF"), io.EOF},
 			{false, false, false, pkgerrors.New("EOF"), errors.New("EOF")},
-			{true, false, false, pkgerrors.New("EOF"), pkgerrors.New("EOF")},
+			{true, true, false, pkgerrors.New("EOF"), pkgerrors.New("EOF")},
 			{true, false, false, pkgerrors.WithStack(io.EOF), io.EOF},
 			{true, false, false, pkgerrors.Wrap(io.EOF, "wrapped"), io.EOF},
 			{true, false, false, pkgerrors.Wrap(io.EOF, "wrapped"), errors.New("EOF")},
 			{true, false, false, pkgerrors.Wrap(pkgerrors.Wrap(io.EOF, "wrapped"), "wrapped2"), io.EOF},
+			{true, false, false, fmt.Errorf("wrapped: %w", io.EOF), io.EOF},
+			{true, false, false, fmt.Errorf("wrapped: %w", io.EOF), errors.New("EOF")},
+			{true, false, false, fmt.Errorf("wrapped2: %w", fmt.Errorf("wrapped: %w", io.EOF)), io.EOF},
+			{true, false, false, fmt.Errorf("wrapped2: %w", pkgerrors.Wrap(io.EOF, "wrapped")), io.EOF},
+			{true, false, false, pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"), io.EOF},
+			{true, false, false, pkgerrors.Wrap(pkgerrors.Wrap(fmt.Errorf("wrapped4: %w", fmt.Errorf("wrapped3: %w", pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"))), "wrapped5"), "wrapped6"), io.EOF},
 			{false, false, false, io.EOF, &myError{"EOF"}},
 		}
 		for _, v := range cases {
-			if v.err {
-				t.Err(v.actual, v.expected)
-				todo.NotErr(v.actual, v.expected)
-			} else {
-				todo.Err(v.actual, v.expected)
-				t.NotErr(v.actual, v.expected)
-			}
-			if v.equal {
-				t.Equal(v.actual, v.expected)
-			} else {
-				t.NotEqual(v.actual, v.expected)
-			}
-			if v.deepEqual {
-				t.DeepEqual(v.actual, v.expected)
-			} else {
-				t.NotDeepEqual(v.actual, v.expected)
-			}
+			t.Run("", func(tt *testing.T) {
+				t := check.T(tt)
+				if v.err {
+					t.Err(v.actual, v.expected)
+					todo.NotErr(v.actual, v.expected)
+				} else {
+					todo.Err(v.actual, v.expected)
+					t.NotErr(v.actual, v.expected)
+				}
+				if v.equal {
+					t.Equal(v.actual, v.expected)
+				} else {
+					t.NotEqual(v.actual, v.expected)
+				}
+				if v.deepEqual {
+					t.DeepEqual(v.actual, v.expected)
+				} else {
+					t.NotDeepEqual(v.actual, v.expected)
+				}
+			})
 		}
 	})
 

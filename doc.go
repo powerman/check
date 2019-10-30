@@ -56,7 +56,7 @@
 //	t.Nil(err)
 //	t.Err(err, nil)
 //
-//	// Check for (absence of) concrete error:
+//	// Check for (absence of) concrete (possibly wrapped) error:
 //	t.Err(err, io.EOF)
 //	t.NotErr(err, io.EOF) // nil is not io.EOF, so it's ok too
 //
