@@ -3,8 +3,6 @@ package check
 import (
 	"os"
 	"strings"
-
-	"golang.org/x/sys/unix"
 )
 
 var (
@@ -23,14 +21,6 @@ func init() {
 func wantColor() bool {
 	return strings.Contains(os.Getenv("TERM"), "color") &&
 		(isTerminal() || os.Getenv("GO_TEST_COLOR") != "")
-}
-
-func isTerminal() bool {
-	if ioctlReadTermios == 0 {
-		return false
-	}
-	_, err := unix.IoctlGetTermios(int(os.Stdout.Fd()), ioctlReadTermios)
-	return err == nil
 }
 
 func colouredDiff(diff string) string {

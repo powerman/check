@@ -2,6 +2,13 @@
 
 package check
 
-import "golang.org/x/sys/unix"
+import (
+	"os"
 
-const ioctlReadTermios = unix.TCGETS
+	"golang.org/x/sys/unix"
+)
+
+func isTerminal() bool {
+	_, err := unix.IoctlGetTermios(int(os.Stdout.Fd()), unix.TCGETS)
+	return err == nil
+}

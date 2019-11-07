@@ -1,5 +1,7 @@
-// +build !linux,!darwin,!dragonfly,!freebsd,!netbsd,!openbsd
+// +build !linux,!darwin,!dragonfly,!freebsd,!netbsd,!openbsd,!windows
 
 package check
 
-const ioctlReadTermios = uint(0)
+func isTerminal() bool {
+	return false
+}
