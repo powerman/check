@@ -13,6 +13,10 @@ import (
 	"time"
 
 	pkgerrors "github.com/pkg/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/powerman/check"
 )
@@ -89,6 +93,7 @@ var (
 	zJSON     json.RawMessage
 	zJSONPtr  *json.RawMessage
 	zTime     time.Time
+	zProto    emptypb.Empty
 	// Initialized but otherwise zero-like values.
 	vChan              = make(chan int)
 	vFunc              = func() {}
@@ -148,6 +153,8 @@ var (
 	xJSONPtr                  = &xJSON
 	xTime                     = time.Now()
 	xTimeEST                  = xTime.In(func() *time.Location { loc, _ := time.LoadLocation("EST"); return loc }())
+	xProto                    = timestamppb.Now()
+	xGRPCErr                  = status.Error(codes.Unknown, "unknown")
 )
 
 func TestTODO(tt *testing.T) {
@@ -413,6 +420,7 @@ func TestCheckerEqual(tt *testing.T) {
 		{false, zJSON, xJSON},
 		{true, zJSONPtr, xJSONPtr},
 		{true, zTime, xTime},
+		{false, zProto, xProto},
 		{true, vChan, xChan},
 		{false, vFunc, xFunc},
 		{true, vIface, xIface},
@@ -494,6 +502,8 @@ func TestCheckerEqual(tt *testing.T) {
 		{true, &testing.T{}, &testing.T{}},
 		{false, []byte{2, 5}, []byte{2, 5}},
 		{false, notComparable{"a", []int{3, 5}}, notComparable{"a", []int{3, 5}}},
+		{false, zProto, zProto},
+		{false, xGRPCErr, xGRPCErr},
 	}
 	for _, v := range cases {
 		if v.comparable {
@@ -1635,6 +1645,9 @@ func TestCheckers(t *testing.T) {
 			{true, false, false, pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"), io.EOF},
 			{true, false, false, pkgerrors.Wrap(pkgerrors.Wrap(fmt.Errorf("wrapped4: %w", fmt.Errorf("wrapped3: %w", pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"))), "wrapped5"), "wrapped6"), io.EOF},
 			{false, false, false, io.EOF, &myError{"EOF"}},
+			{true, true, true, xGRPCErr, xGRPCErr},
+			{true, true, false, xGRPCErr, status.Error(codes.Unknown, "unknown")},
+			{false, false, false, xGRPCErr, nil},
 		}
 		for _, v := range cases {
 			t.Run("", func(tt *testing.T) {
