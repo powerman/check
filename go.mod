@@ -11,5 +11,5 @@ require (
 	github.com/smartystreets/goconvey v1.6.4
 	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9
 	google.golang.org/grpc v1.27.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.26.0
 )
