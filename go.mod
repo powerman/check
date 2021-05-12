@@ -10,6 +10,6 @@ require (
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v1.6.4
 	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9
-	google.golang.org/grpc v1.27.0
+	google.golang.org/grpc v1.37.1
 	google.golang.org/protobuf v1.25.0
 )
