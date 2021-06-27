@@ -12,3 +12,4 @@ updates:
       interval: 'daily'
     commit-message:
       prefix: "chore:"
+    open-pull-requests-limit: 10
