@@ -5,11 +5,11 @@ updates:
     schedule:
       interval: 'daily'
     commit-message:
-      prefix: "chore:"
+      prefix: "chore(ci):"
   - package-ecosystem: 'gomod'
     directory: '/'
     schedule:
       interval: 'daily'
     commit-message:
-      prefix: "chore:"
+      prefix: "chore(deps):"
     open-pull-requests-limit: 10
