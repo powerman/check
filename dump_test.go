@@ -1,4 +1,4 @@
-package check
+package check //nolint:testpackage // Testing unexported identifiers.
 
 import (
 	"encoding/json"
@@ -81,8 +81,8 @@ func TestDump(tt *testing.T) {
 		{false, []int{1: 0}},
 		{false, chan int(nil)},
 		{false, make(chan int)},
-		{false, (chan<- int)(make(chan int, 2))},
-		{false, (func())(nil)},
+		{false, chan<- int(make(chan int, 2))},
+		{false, (func())(nil)}, //nolint:gocritic // False positive.
 		{false, func(i int) int { return 0 }},
 		{false, io.EOF},
 		{false, map[int]int(nil)},

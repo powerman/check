@@ -1,4 +1,4 @@
-package check
+package check //nolint:testpackage // Testing unexported identifiers.
 
 import (
 	"regexp"

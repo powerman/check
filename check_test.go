@@ -1,3 +1,4 @@
+//nolint:goerr113 // It's just a test.
 package check_test
 
 import (
@@ -62,7 +63,7 @@ var (
 	zSlice   []int
 	zString  string
 	zStruct  struct{}
-	// zUnsafe     unsafe.Pointer // don't like to import unsafe
+	// zUnsafe     unsafe.Pointer // don't like to import unsafe.
 	zBoolPtr    *bool
 	zIntPtr     *int
 	zInt8Ptr    *int8
@@ -123,7 +124,7 @@ var (
 	xSlice             = []int{3, 5, 8}
 	xString            = "<nil>"
 	xStruct            = myStruct{i: 10, s: "ten"}
-	// xUnsafe                      = unsafe.Pointer(&xUintptr) // don't like to import unsafe
+	// xUnsafe                      = unsafe.Pointer(&xUintptr) // don't like to import unsafe.
 	xBoolPtr    = &xBool
 	xIntPtr     = &xInt
 	xInt8Ptr    = &xInt8
@@ -146,7 +147,7 @@ var (
 	xSlicePtr   = &xSlice
 	xStringPtr  = &xString
 	xStructPtr  = &xStruct
-	// xUnsafePtr  *unsafe.Pointer  = &xUnsafe // don't like to import unsafe
+	// xUnsafePtr  *unsafe.Pointer  = &xUnsafe // don't like to import unsafe.
 	xMyInt    myInt           = 31337
 	xMyString myString        = "xyz"
 	xJSON     json.RawMessage = []byte(`{"s":"ten","i":10}`)
@@ -234,7 +235,7 @@ func TestCheckerNilTrue(tt *testing.T) {
 	t.True(zSlice == nil)
 	t.True(zString == "")
 	t.True(zStruct == struct{}{})
-	// t.True(zUnsafe == nil)
+	// // t.True(zUnsafe == nil)
 	t.True(zBoolPtr == nil)
 	t.True(zIntPtr == nil)
 	t.True(zInt8Ptr == nil)
@@ -258,7 +259,7 @@ func TestCheckerNilTrue(tt *testing.T) {
 	t.True(zSlicePtr == nil)
 	t.True(zStringPtr == nil)
 	t.True(zStructPtr == nil)
-	// t.True(zUnsafePtr == nil)
+	// // t.True(zUnsafePtr == nil)
 	t.True(zMyInt == 0)
 	t.True(zMyString == "")
 	t.True(zJSON == nil)
@@ -420,7 +421,7 @@ func TestCheckerEqual(tt *testing.T) {
 		{false, zJSON, xJSON},
 		{true, zJSONPtr, xJSONPtr},
 		{true, zTime, xTime},
-		{false, zProto, xProto},
+		{false, zProto, xProto}, //nolint:govet // This is dirty (copylocks), but it's a test.
 		{true, vChan, xChan},
 		{false, vFunc, xFunc},
 		{true, vIface, xIface},
@@ -502,7 +503,7 @@ func TestCheckerEqual(tt *testing.T) {
 		{true, &testing.T{}, &testing.T{}},
 		{false, []byte{2, 5}, []byte{2, 5}},
 		{false, notComparable{"a", []int{3, 5}}, notComparable{"a", []int{3, 5}}},
-		{false, zProto, zProto},
+		{false, zProto, zProto}, //nolint:govet // This is dirty (copylocks), but it's a test.
 		{false, xGRPCErr, xGRPCErr},
 	}
 	for _, v := range cases {
@@ -1271,6 +1272,11 @@ func half(v interface{}) interface{} {
 		return val.Uint() / 2
 	case reflect.Float32, reflect.Float64:
 		return val.Float() / 2
+	case reflect.Complex128, reflect.Complex64: // ???
+	// No meaningful "half":
+	case reflect.Array, reflect.Slice, reflect.Map, reflect.Struct, reflect.Bool, reflect.String:
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Invalid:
+	case reflect.Ptr, reflect.UnsafePointer:
 	}
 	panic(fmt.Sprintf("can't get half from %#v", v))
 }
@@ -1347,7 +1353,7 @@ func TestCheckerSubstring(t *testing.T) {
 		{[]byte("Sunday"), []byte("Monday")},
 		{[]rune("Sunday"), []rune("Monday")},
 		{time.Sunday, time.Monday},
-		{errors.New("Sunday"), errors.New("Monday")}, // nolint:golint
+		{errors.New("Sunday"), errors.New("Monday")},
 	}
 
 	t.Run("HasPrefix", func(tt *testing.T) {
@@ -1681,8 +1687,8 @@ func TestCheckers(t *testing.T) {
 		todo.Panic(func() {})
 		t.NotPanic(func() {})
 
-		t.Panic(func() { panic(nil) })
-		todo.NotPanic(func() { panic(nil) })
+		t.Panic(func() { panic(nil) })       //nolint:govet // Testing nil panic.
+		todo.NotPanic(func() { panic(nil) }) //nolint:govet // Testing nil panic.
 
 		t.Panic(func() { panic("") })
 		t.Panic(func() { panic("oops") })
@@ -1706,12 +1712,12 @@ func TestCheckers(t *testing.T) {
 		todo.PanicMatch(func() {}, `test`)
 		todo.PanicNotMatch(func() {}, `test`)
 
-		t.PanicMatch(func() { panic(nil) }, ``)
-		todo.PanicNotMatch(func() { panic(nil) }, ``)
-		t.PanicMatch(func() { panic(nil) }, `^<nil>$`)
-		todo.PanicNotMatch(func() { panic(nil) }, `^<nil>$`)
-		t.PanicNotMatch(func() { panic(nil) }, `test`)
-		todo.PanicMatch(func() { panic(nil) }, `test`)
+		t.PanicMatch(func() { panic(nil) }, ``)              //nolint:govet // Testing nil panic.
+		todo.PanicNotMatch(func() { panic(nil) }, ``)        //nolint:govet // Testing nil panic.
+		t.PanicMatch(func() { panic(nil) }, `^<nil>$`)       //nolint:govet // Testing nil panic.
+		todo.PanicNotMatch(func() { panic(nil) }, `^<nil>$`) //nolint:govet // Testing nil panic.
+		t.PanicNotMatch(func() { panic(nil) }, `test`)       //nolint:govet // Testing nil panic.
+		todo.PanicMatch(func() { panic(nil) }, `test`)       //nolint:govet // Testing nil panic.
 
 		t.PanicMatch(func() { panic("") }, regexp.MustCompile(`^$`))
 		t.PanicMatch(func() { panic("oops") }, `(?i)Oops`)
