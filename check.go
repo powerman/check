@@ -378,6 +378,14 @@ func (t *C) NotNil(actual interface{}, msg ...interface{}) bool {
 		!isNil(actual))
 }
 
+// Error is equivalent to Log followed by Fail.
+//
+// It is like t.Errorf with TODO() and statistics support.
+func (t *C) Error(msg ...interface{}) {
+	t.Helper()
+	t.report0(msg, false)
+}
+
 // True checks for cond == true.
 //
 // This can be useful to use your own custom checks, but this way you

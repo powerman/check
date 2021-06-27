@@ -181,6 +181,14 @@ func TestTODO(tt *testing.T) {
 	t.True(false)
 }
 
+func TestError(tt *testing.T) {
+	t := check.T(tt)
+	t = t.TODO()
+	t.Error()
+	t.Error("message")
+	t.Error("format: %q", "message")
+}
+
 func TestMust(tt *testing.T) {
 	t := check.T(tt)
 	t.Must(t.Nil(nil))
