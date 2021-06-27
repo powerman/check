@@ -102,5 +102,5 @@ func Report() {
 func TestMain(m *testing.M) {
 	code := m.Run()
 	Report()
-	os.Exit(code)
+	os.Exit(code) //nolint:revive // By design.
 }

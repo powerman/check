@@ -123,7 +123,7 @@ func (t *C) fail() {
 	stats[t.T].failed.value++
 }
 
-func (t *C) report(ok bool, msg []interface{}, checker string, name []string, args []interface{}) bool {
+func (t *C) report(ok bool, msg []interface{}, checker string, name []string, args []interface{}) bool { //nolint:revive // False positive.
 	t.Helper()
 
 	if ok != t.todo {
@@ -245,7 +245,7 @@ func (t *C) report3(actual, expected1, expected2 interface{}, msg []interface{},
 // This provides easy way to turn any check into assertion:
 //
 //   t.Must(t.Nil(err))
-func (t *C) Must(continueTest bool, msg ...interface{}) {
+func (t *C) Must(continueTest bool, msg ...interface{}) { //nolint:revive // False positive.
 	t.Helper()
 	t.report0(msg, continueTest)
 	if !continueTest {
