@@ -28,6 +28,7 @@ var (
 type C struct {
 	*testing.T
 	todo bool
+	must bool
 }
 
 const (
@@ -96,7 +97,16 @@ func T(tt *testing.T) *C { //nolint:thelper // With check we name it tt!
 //		...
 //	}
 func (t *C) TODO() *C {
-	return &C{T: t.T, todo: true}
+	return &C{T: t.T, todo: true, must: t.must}
+}
+
+// MustAll creates and returns new *C, which have only one difference from
+// original one: every failed check will interrupt test using t.FailNow.
+// You can continue using both old and new *C at same time.
+//
+// This provides an easy way to turn all checks into assertion.
+func (t *C) MustAll() *C {
+	return &C{T: t.T, todo: t.todo, must: true}
 }
 
 func (t *C) pass() {
@@ -176,6 +186,10 @@ func (t *C) report(ok bool, msg []interface{}, checker string, name []string, ar
 	}
 
 	t.fail()
+
+	if t.must {
+		t.FailNow()
+	}
 	return ok
 }
 
@@ -242,7 +256,7 @@ func (t *C) report3(actual, expected1, expected2 interface{}, msg []interface{},
 
 // Must interrupt test using t.FailNow if called with false value.
 //
-// This provides easy way to turn any check into assertion:
+// This provides an easy way to turn any check into assertion:
 //
 //   t.Must(t.Nil(err))
 func (t *C) Must(continueTest bool, msg ...interface{}) { //nolint:revive // False positive.

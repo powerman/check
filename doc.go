@@ -79,6 +79,11 @@
 //
 //	t.Must(t.Nil(err))
 //
+// ★ You can turn all checks into assertions to stop test immediately:
+//
+//	t = t.MustAll()
+//	t.Nil(err)
+//
 // ★ You can provide extra description to each check:
 //
 //	t.Equal(got, want, "Just msg: will Print(), % isn't special")
@@ -112,6 +117,7 @@
 //
 //	Error
 //	Must
+//	MustAll
 //	Should
 //	TODO
 //

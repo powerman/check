@@ -189,6 +189,14 @@ func TestError(tt *testing.T) {
 	t.Error("format: %q", "message")
 }
 
+func TestMustAll(tt *testing.T) {
+	t := check.T(tt).MustAll()
+	t.Nil(nil)
+	t.NotNil(false)
+	t.TODO().Nil(false)
+	t.TODO().NotNil(nil)
+}
+
 func TestMust(tt *testing.T) {
 	t := check.T(tt)
 	t.Must(t.Nil(nil))
