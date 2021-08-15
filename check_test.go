@@ -500,10 +500,10 @@ func TestCheckerEqual(tt *testing.T) {
 	t.False(xTime == xTimeEST)
 	t.Equal(xTime, xTimeEST)
 	t.EQ(xTime, xTimeEST)
-	t.NotDeepEqual(xTime, xTimeEST)
+	t.DeepEqual(xTime, xTimeEST)
 	todo.NotEqual(xTime, xTimeEST)
 	todo.NE(xTime, xTimeEST)
-	todo.DeepEqual(xTime, xTimeEST)
+	todo.NotDeepEqual(xTime, xTimeEST)
 
 	// Equal not match or panic, DeepEqual match.
 	type notComparable struct {
