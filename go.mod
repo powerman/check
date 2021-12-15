@@ -11,6 +11,6 @@ require (
 	github.com/powerman/deepequal v0.1.0
 	github.com/smartystreets/goconvey v1.6.4
 	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
-	google.golang.org/grpc v1.38.0
+	google.golang.org/grpc v1.43.0
 	google.golang.org/protobuf v1.27.0
 )
