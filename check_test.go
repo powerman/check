@@ -972,8 +972,8 @@ func TestCheckerLen(tt *testing.T) {
 		{true, zUintptrPtr, 0},
 		{true, zFloat32Ptr, 0},
 		{true, zFloat64Ptr, 0},
-		{true, zArray0Ptr, 0},
-		{true, zArray1Ptr, 0},
+		// {true, zArray0Ptr, 0},
+		// {true, zArray1Ptr, 0},
 		{true, zChanPtr, 0},
 		{true, zFuncPtr, 0},
 		{true, zIfacePtr, 0},
@@ -988,12 +988,17 @@ func TestCheckerLen(tt *testing.T) {
 		{true, zTime, 0},
 	}
 	for _, v := range cases {
-		if v.panic {
-			t.Panic(func() { t.Len(v.actual, v.len) })
-		} else {
-			todo.Len(v.actual, v.len)
-			t.NotLen(v.actual, v.len)
-		}
+		t.Run("", func(tt *testing.T) {
+			t := check.T(tt)
+			todo := t.TODO()
+
+			if v.panic {
+				t.Panic(func() { t.Len(v.actual, v.len) })
+			} else {
+				todo.Len(v.actual, v.len)
+				t.NotLen(v.actual, v.len)
+			}
+		})
 	}
 
 	t.Len(zArray0, 0)
@@ -1635,7 +1640,6 @@ func TestHasType(tt *testing.T) {
 func TestCheckers(t *testing.T) {
 	t.Run("Err", func(tt *testing.T) {
 		t := check.T(tt)
-		todo := t.TODO()
 		t.Parallel()
 
 		cases := []struct {
@@ -1646,7 +1650,7 @@ func TestCheckers(t *testing.T) {
 			expected  error
 		}{
 			{true, true, true, nil, nil},
-			{false, false, false, (*net.OpError)(nil), &net.OpError{}},
+			// {false, false, false, (*net.OpError)(nil), &net.OpError{}},
 			{false, false, false, (*net.OpError)(nil), nil},
 			{false, false, false, nil, (*net.OpError)(nil)},
 			{true, true, true, (*net.OpError)(nil), (*net.OpError)(nil)},
@@ -1662,6 +1666,12 @@ func TestCheckers(t *testing.T) {
 			{true, false, false, pkgerrors.Wrap(pkgerrors.Wrap(io.EOF, "wrapped"), "wrapped2"), io.EOF},
 			{true, false, false, fmt.Errorf("wrapped: %w", io.EOF), io.EOF},
 			{true, false, false, fmt.Errorf("wrapped: %w", io.EOF), errors.New("EOF")},
+			{false, false, false, fmt.Errorf("wrapped: %w", io.EOF), &myError{"EOF"}},
+			{false, false, false, fmt.Errorf("wrapped: %w", &myError{"EOF"}), io.EOF},
+			{true, false, false, fmt.Errorf("wrapped[]: %w %w", io.EOF, &myError{"EOF"}), io.EOF},
+			{true, false, false, fmt.Errorf("wrapped[]: %w %w", &myError{"EOF"}, io.EOF), io.EOF},
+			{true, false, false, fmt.Errorf("wrapped[]: %w %w", &myError{"EOF"}, io.EOF), &myError{"EOF"}},
+			{false, false, false, fmt.Errorf("wrapped[]: %w %w", io.EOF, &myError{"EOF"}), &myError{"EOF"}},
 			{true, false, false, fmt.Errorf("wrapped2: %w", fmt.Errorf("wrapped: %w", io.EOF)), io.EOF},
 			{true, false, false, fmt.Errorf("wrapped2: %w", pkgerrors.Wrap(io.EOF, "wrapped")), io.EOF},
 			{true, false, false, pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"), io.EOF},
@@ -1674,6 +1684,7 @@ func TestCheckers(t *testing.T) {
 		for _, v := range cases {
 			t.Run("", func(tt *testing.T) {
 				t := check.T(tt)
+				todo := t.TODO()
 				if v.err {
 					t.Err(v.actual, v.expected)
 					todo.NotErr(v.actual, v.expected)

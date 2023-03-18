@@ -3,6 +3,7 @@ package check
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -259,7 +260,7 @@ func (t *C) report3(actual, expected1, expected2 interface{}, msg []interface{},
 //
 // This provides an easy way to turn any check into assertion:
 //
-//   t.Must(t.Nil(err))
+//	t.Must(t.Nil(err))
 func (t *C) Must(continueTest bool, msg ...interface{}) { //nolint:revive // False positive.
 	t.Helper()
 	t.report0(msg, continueTest)
@@ -715,8 +716,11 @@ func (t *C) NotLen(actual interface{}, expected int, msg ...interface{}) bool {
 
 // Err checks is actual error is the same as expected error.
 //
+// If errors.Is() fails then it'll use more sofiscated logic:
+//
 // It tries to recursively unwrap actual before checking using
 // errors.Unwrap() and github.com/pkg/errors.Cause().
+// In case of multi-error (Unwrap() []error) it use only first error.
 //
 // It will use proto.Equal for gRPC status errors.
 //
@@ -732,6 +736,9 @@ func (t *C) Err(actual, expected error, msg ...interface{}) bool {
 	if proto1 || proto2 {
 		equal = proto.Equal(status.Convert(actual2).Proto(), status.Convert(expected).Proto())
 	}
+	if !equal {
+		equal = errors.Is(actual, expected)
+	}
 	return t.report2(actual, expected, msg, equal)
 }
 
@@ -740,11 +747,16 @@ func unwrapErr(err error) (actual error) {
 	actual = err
 	for {
 		actual = pkgerrors.Cause(actual)
-		wrapped, ok := actual.(interface{ Unwrap() error }) //nolint:errorlint // False positive.
-		if !ok {
-			break
+		var unwrapped error
+		switch wrapped := actual.(type) {
+		case interface{ Unwrap() error }:
+			unwrapped = wrapped.Unwrap()
+		case interface{ Unwrap() []error }:
+			unwrappeds := wrapped.Unwrap()
+			if len(unwrappeds) > 0 {
+				unwrapped = unwrappeds[0]
+			}
 		}
-		unwrapped := wrapped.Unwrap()
 		if unwrapped == nil {
 			break
 		}
@@ -757,12 +769,15 @@ func unwrapErr(err error) (actual error) {
 //
 // It tries to recursively unwrap actual before checking using
 // errors.Unwrap() and github.com/pkg/errors.Cause().
+// In case of multi-error (Unwrap() []error) it use only first error.
 //
 // It will use !proto.Equal for gRPC status errors.
 //
 // They must have either different types or values (or one should be nil).
 // Different instances with same type and value will be considered the
 // same error, and so is both nil.
+//
+// Finally it'll use !errors.Is().
 func (t *C) NotErr(actual, expected error, msg ...interface{}) bool {
 	t.Helper()
 	actual2 := unwrapErr(actual)
@@ -771,6 +786,9 @@ func (t *C) NotErr(actual, expected error, msg ...interface{}) bool {
 	_, proto2 := expected.(interface{ GRPCStatus() *status.Status }) //nolint:errorlint // False positive.
 	if proto1 || proto2 {
 		notEqual = !proto.Equal(status.Convert(actual2).Proto(), status.Convert(expected).Proto())
+	}
+	if notEqual {
+		notEqual = !errors.Is(actual, expected)
 	}
 	return t.report1(actual, msg, notEqual)
 }
@@ -1127,7 +1145,7 @@ func (t *C) NotInDelta(actual, expected, delta interface{}, msg ...interface{}) 
 //   - ~82   when they differs in 10 times
 //   - 99.0+ when actual and expected differs in 200+ times
 //   - 100.0 when only one of actual or expected is 0 or one of them is
-//           positive while another is negative
+//     positive while another is negative
 func (t *C) InSMAPE(actual, expected interface{}, smape float64, msg ...interface{}) bool {
 	t.Helper()
 	return t.report3(actual, expected, smape, msg,
