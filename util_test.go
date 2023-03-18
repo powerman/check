@@ -8,15 +8,15 @@ import (
 func TestFormat(tt *testing.T) {
 	t := T(tt)
 	cases := []struct {
-		args []interface{}
+		args []any
 		want string
 	}{
-		{[]interface{}{}, ""},
-		{[]interface{}{"msg"}, "msg"},
-		{[]interface{}{"%s", "msg"}, "msg"},
-		{[]interface{}{"one", "two"}, "one%!(EXTRA string=two)"},
-		{[]interface{}{42}, "42"},
-		{[]interface{}{regexp.MustCompile(".*")}, ".*"},
+		{[]any{}, ""},
+		{[]any{"msg"}, "msg"},
+		{[]any{"%s", "msg"}, "msg"},
+		{[]any{"one", "two"}, "one%!(EXTRA string=two)"},
+		{[]any{42}, "42"},
+		{[]any{regexp.MustCompile(".*")}, ".*"},
 	}
 	for i, v := range cases {
 		t.Equal(format(v.args...), v.want, i)

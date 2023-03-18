@@ -38,7 +38,7 @@ func TestDump(tt *testing.T) {
 
 	cases := []struct {
 		improved bool
-		i        interface{}
+		i        any
 	}{
 		{true, nil},
 		{false, true},

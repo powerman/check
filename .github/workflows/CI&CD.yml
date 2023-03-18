@@ -8,7 +8,7 @@ on:
     branches: master
 
 env:
-  GO_VERSION: '^1.16'
+  GO_VERSION: '^1.19'
 
 jobs:
 
@@ -16,13 +16,13 @@ jobs:
     runs-on: 'ubuntu-latest'
     timeout-minutes: 30
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/go/bin
@@ -30,17 +30,17 @@ jobs:
             ~/go/src
             ~/.cache/go-build
             ~/.cache/golangci-lint
-            .gobincache
-          key: v3-test-${{ runner.os }}-${{ hashFiles('go.mod') }}
+            .buildcache
+          key: v4-test-${{ runner.os }}-${{ hashFiles('go.mod') }}
           restore-keys: |
-            v3-test-${{ runner.os }}-
+            v4-test-${{ runner.os }}-
 
       - run: go generate
-      - run: .gobincache/golangci-lint run
+      - run: .buildcache/bin/golangci-lint run
       - run: go test -race ./...
 
       - name: Report code coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
         if: env.COVERALLS_TOKEN
-        run: .gobincache/goveralls -service=GitHub
+        run: .buildcache/bin/goveralls -service=GitHub

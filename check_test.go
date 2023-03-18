@@ -58,7 +58,7 @@ var (
 	zArray1  [1]int
 	zChan    chan int
 	zFunc    func()
-	zIface   interface{}
+	zIface   any
 	zMap     map[int]int
 	zSlice   []int
 	zString  string
@@ -82,7 +82,7 @@ var (
 	zArray1Ptr  *[1]int
 	zChanPtr    *chan int
 	zFuncPtr    *func()
-	zIfacePtr   *interface{}
+	zIfacePtr   *any
 	zMapPtr     *map[int]int
 	zSlicePtr   *[]int
 	zStringPtr  *string
@@ -96,11 +96,11 @@ var (
 	zTime     time.Time
 	zProto    emptypb.Empty
 	// Initialized but otherwise zero-like values.
-	vChan              = make(chan int)
-	vFunc              = func() {}
-	vIface interface{} = zIntPtr
-	vMap               = make(map[int]int)
-	vSlice             = make([]int, 0)
+	vChan      = make(chan int)
+	vFunc      = func() {}
+	vIface any = zIntPtr
+	vMap       = make(map[int]int)
+	vSlice     = make([]int, 0)
 	// Non-zero values.
 	xBool              = true
 	xInt               = -42
@@ -203,11 +203,11 @@ func TestMust(tt *testing.T) {
 	t.Must(t.NotNil(false))
 }
 
-func bePositive(_ *check.C, actual interface{}) bool {
+func bePositive(_ *check.C, actual any) bool {
 	return actual.(int) > 0
 }
 
-func beEqual(_ *check.C, actual, expected interface{}) bool {
+func beEqual(_ *check.C, actual, expected any) bool {
 	return actual == expected
 }
 
@@ -215,7 +215,7 @@ func TestCheckerShould(tt *testing.T) {
 	t := check.T(tt)
 	t.Should(bePositive, 42, "custom check!!!")
 	t.Panic(func() { t.Should(bePositive, "42", "bad arg type") })
-	t.TODO().Should(func(_ *check.C, _ interface{}) bool { return false }, 42)
+	t.TODO().Should(func(_ *check.C, _ any) bool { return false }, 42)
 	t.Should(beEqual, 123, 123)
 	t.TODO().Should(beEqual, 123, 124)
 	t.Panic(func() { t.Should(func() {}, nil) })
@@ -280,7 +280,7 @@ func TestCheckerNilTrue(tt *testing.T) {
 	t.True(zMyString == "")
 	t.True(zJSON == nil)
 	t.True(zJSONPtr == nil)
-	t.True(zTime == time.Time{})
+	t.True(zTime.Equal(time.Time{}))
 	t.False(vChan == nil)
 	t.False(vFunc == nil)
 	t.False(vIface == nil)
@@ -298,7 +298,7 @@ func TestCheckerNilTrue(tt *testing.T) {
 	cases := []struct {
 		equalNil bool
 		isNil    bool
-		actual   interface{}
+		actual   any
 	}{
 		{true, true, nil},
 		{false, false, zBool},
@@ -383,8 +383,8 @@ func TestCheckerEqual(tt *testing.T) {
 
 	cases := []struct {
 		comparable bool
-		actual     interface{}
-		actual2    interface{}
+		actual     any
+		actual2    any
 	}{
 		{true, zBool, xBool},
 		{true, zInt, xInt},
@@ -497,7 +497,7 @@ func TestCheckerEqual(tt *testing.T) {
 	todo.NotDeepEqual(nil, nil)
 
 	// Equal match, DeepEqual not match.
-	t.False(xTime == xTimeEST)
+	t.False(xTime == xTimeEST) //nolint:revive // Need == instead of Equal() here.
 	t.Equal(xTime, xTimeEST)
 	t.EQ(xTime, xTimeEST)
 	t.DeepEqual(xTime, xTimeEST)
@@ -512,8 +512,8 @@ func TestCheckerEqual(tt *testing.T) {
 	}
 	cases = []struct {
 		comparable bool
-		actual     interface{}
-		actual2    interface{}
+		actual     any
+		actual2    any
 	}{
 		{true, io.EOF, errors.New("EOF")},
 		{true, &testing.T{}, &testing.T{}},
@@ -574,7 +574,7 @@ func TestCheckerMatch(tt *testing.T) {
 	types := []struct {
 		actual   bool
 		expected bool
-		zero     interface{}
+		zero     any
 	}{
 		{true, false, nil},
 		{false, false, zBool},
@@ -653,9 +653,9 @@ func TestCheckerMatch(tt *testing.T) {
 	}
 
 	cases := []struct {
-		actual        interface{}
-		regexMatch    interface{}
-		regexNotMatch interface{}
+		actual        any
+		regexMatch    any
+		regexNotMatch any
 	}{
 		{"", `^$`, `.`},
 		{myString("Test"), regexp.MustCompile(`st$`), regexp.MustCompile(`ST$`)},
@@ -685,8 +685,8 @@ func TestCheckerContains(tt *testing.T) {
 
 	failures := []struct {
 		panic    bool
-		actual   interface{}
-		expected interface{}
+		actual   any
+		expected any
 	}{
 		{true, nil, nil},
 		{true, zBool, zBool},
@@ -774,8 +774,8 @@ func TestCheckerHasKey(tt *testing.T) {
 
 	failures := []struct {
 		panic    bool
-		actual   interface{}
-		expected interface{}
+		actual   any
+		expected any
 	}{
 		{true, nil, nil},
 		{true, zBool, zBool},
@@ -850,8 +850,8 @@ func TestCheckerZero(tt *testing.T) {
 	todo := t.TODO()
 
 	cases := []struct {
-		zero    interface{}
-		notzero interface{}
+		zero    any
+		notzero any
 	}{
 		{zBool, xBool},
 		{zInt, xInt},
@@ -927,11 +927,10 @@ func TestCheckerZero(tt *testing.T) {
 
 func TestCheckerLen(tt *testing.T) {
 	t := check.T(tt)
-	todo := t.TODO()
 
 	cases := []struct {
 		panic  bool
-		actual interface{}
+		actual any
 		len    int
 	}{
 		{true, nil, 0},
@@ -1001,6 +1000,8 @@ func TestCheckerLen(tt *testing.T) {
 		})
 	}
 
+	todo := t.TODO()
+
 	t.Len(zArray0, 0)
 	t.Len(zArray1, 1)
 
@@ -1027,9 +1028,9 @@ func TestCheckerLen(tt *testing.T) {
 func TestCheckerOrdered(t *testing.T) {
 	cases := []struct {
 		panic bool
-		min   interface{}
-		mid   interface{}
-		max   interface{}
+		min   any
+		mid   any
+		max   any
 	}{
 		{true, nil, nil, nil},
 		{true, zBool, xBool, xBool},
@@ -1177,9 +1178,9 @@ func TestCheckerOrdered(t *testing.T) {
 func TestCheckerApprox(t *testing.T) {
 	cases := []struct {
 		panic    bool
-		actual   interface{}
-		expected interface{}
-		delta    interface{}
+		actual   any
+		expected any
+		delta    any
 		smape    float64
 	}{
 		{true, nil, nil, nil, 0},
@@ -1282,7 +1283,7 @@ func TestCheckerApprox(t *testing.T) {
 	})
 }
 
-func half(v interface{}) interface{} {
+func half(v any) any {
 	if v, ok := v.(time.Duration); ok {
 		return v / 2
 	}
@@ -1305,7 +1306,7 @@ func half(v interface{}) interface{} {
 func TestCheckerSubstring(t *testing.T) {
 	cases := []struct {
 		panic  bool
-		actual interface{}
+		actual any
 		prefix string
 		suffix string
 	}{
@@ -1367,8 +1368,8 @@ func TestCheckerSubstring(t *testing.T) {
 	}
 
 	substrings := []struct {
-		prefix interface{}
-		suffix interface{}
+		prefix any
+		suffix any
 	}{
 		{"Sunday", "Monday"},
 		{[]byte("Sunday"), []byte("Monday")},
@@ -1456,7 +1457,7 @@ func TestJSONEqual(tt *testing.T) {
 
 	cases := []struct {
 		panic bool
-		json  interface{}
+		json  any
 	}{
 		{false, nil},
 		{true, zBool},
@@ -1535,7 +1536,7 @@ func TestJSONEqual(tt *testing.T) {
 	t.JSONEqual(invalidRaw, &invalidRaw)
 
 	validRaw := json.RawMessage(invalid + "}")
-	valid := []interface{}{
+	valid := []any{
 		`{ "b" : [ 2],"a" :1}  `,
 		[]byte(`  { "b": [2 ],"a": 1}`),
 		validRaw,
@@ -1552,7 +1553,7 @@ func TestHasType(tt *testing.T) {
 	t := check.T(tt)
 	todo := t.TODO()
 
-	vs := []interface{}{
+	vs := []any{
 		zBool,
 		zInt,
 		zInt8,
