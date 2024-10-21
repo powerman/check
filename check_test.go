@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	pkgerrors "github.com/pkg/errors"
+	pkgerrors "github.com/pkg/errors" //nolint:depguard // By design.
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -1147,29 +1147,29 @@ func TestCheckerOrdered(t *testing.T) {
 		todo := t.TODO()
 		t.Parallel()
 		for _, v := range cases {
-			min, mid, max := v.min, v.mid, v.max
+			minimum, middle, maximum := v.min, v.mid, v.max
 			if v.panic {
-				t.Panic(func() { t.Between(mid, min, max) })
-				t.Panic(func() { t.BetweenOrEqual(mid, min, max) })
-				t.Panic(func() { t.NotBetween(min, mid, max) })
-				t.Panic(func() { t.NotBetweenOrEqual(min, mid, max) })
+				t.Panic(func() { t.Between(middle, minimum, maximum) })
+				t.Panic(func() { t.BetweenOrEqual(middle, minimum, maximum) })
+				t.Panic(func() { t.NotBetween(minimum, middle, maximum) })
+				t.Panic(func() { t.NotBetweenOrEqual(minimum, middle, maximum) })
 			} else {
-				t.Between(mid, min, max)
-				t.BetweenOrEqual(mid, min, max)
-				t.BetweenOrEqual(mid, mid, max)
-				t.BetweenOrEqual(mid, min, mid)
-				todo.NotBetween(mid, min, max)
-				todo.NotBetweenOrEqual(mid, min, max)
-				todo.NotBetweenOrEqual(mid, mid, max)
-				todo.NotBetweenOrEqual(mid, min, mid)
-				t.NotBetween(min, mid, max)
-				t.NotBetween(max, min, mid)
-				t.NotBetweenOrEqual(min, mid, max)
-				t.NotBetweenOrEqual(max, min, mid)
-				todo.Between(min, mid, max)
-				todo.Between(max, min, mid)
-				todo.BetweenOrEqual(min, mid, max)
-				todo.BetweenOrEqual(max, min, mid)
+				t.Between(middle, minimum, maximum)
+				t.BetweenOrEqual(middle, minimum, maximum)
+				t.BetweenOrEqual(middle, middle, maximum)
+				t.BetweenOrEqual(middle, minimum, middle)
+				todo.NotBetween(middle, minimum, maximum)
+				todo.NotBetweenOrEqual(middle, minimum, maximum)
+				todo.NotBetweenOrEqual(middle, middle, maximum)
+				todo.NotBetweenOrEqual(middle, minimum, middle)
+				t.NotBetween(minimum, middle, maximum)
+				t.NotBetween(maximum, minimum, middle)
+				t.NotBetweenOrEqual(minimum, middle, maximum)
+				t.NotBetweenOrEqual(maximum, minimum, middle)
+				todo.Between(minimum, middle, maximum)
+				todo.Between(maximum, minimum, middle)
+				todo.BetweenOrEqual(minimum, middle, maximum)
+				todo.BetweenOrEqual(maximum, minimum, middle)
 			}
 		}
 	})
@@ -1371,11 +1371,11 @@ func TestCheckerSubstring(t *testing.T) {
 		prefix any
 		suffix any
 	}{
-		{"Sunday", "Monday"},
-		{[]byte("Sunday"), []byte("Monday")},
-		{[]rune("Sunday"), []rune("Monday")},
+		{time.Sunday.String(), time.Monday.String()},
+		{[]byte(time.Sunday.String()), []byte(time.Monday.String())},
+		{[]rune(time.Sunday.String()), []rune(time.Monday.String())},
 		{time.Sunday, time.Monday},
-		{errors.New("Sunday"), errors.New("Monday")},
+		{errors.New(time.Sunday.String()), errors.New(time.Monday.String())},
 	}
 
 	t.Run("HasPrefix", func(tt *testing.T) {
@@ -1651,6 +1651,7 @@ func TestCheckers(t *testing.T) {
 			expected  error
 		}{
 			{true, true, true, nil, nil},
+			//nolint:dupword // Commented code.
 			// {false, false, false, (*net.OpError)(nil), &net.OpError{}},
 			{false, false, false, (*net.OpError)(nil), nil},
 			{false, false, false, nil, (*net.OpError)(nil)},

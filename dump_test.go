@@ -82,8 +82,8 @@ func TestDump(tt *testing.T) {
 		{false, chan int(nil)},
 		{false, make(chan int)},
 		{false, chan<- int(make(chan int, 2))},
-		{false, (func())(nil)}, //nolint:gocritic // False positive.
-		{false, func(i int) int { return 0 }},
+		{false, (func())(nil)},
+		{false, func(_ int) int { return 0 }},
 		{false, io.EOF},
 		{false, map[int]int(nil)},
 		{false, map[int]int{2: 0}},
