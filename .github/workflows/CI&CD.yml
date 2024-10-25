@@ -17,7 +17,7 @@ jobs:
         go:
           - 'stable' # Also used for goveralls.
           - 'oldstable'
-          - '^1.19'
+          - '^1.20'
 
     steps:
       - uses: actions/checkout@v4
