@@ -8,7 +8,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/powerman/deepequal v0.1.0
 	github.com/smartystreets/goconvey v1.8.1
-	golang.org/x/sys v0.26.0
+	golang.org/x/sys v0.27.0
 	google.golang.org/grpc v1.56.3
 	google.golang.org/protobuf v1.34.2
 )
