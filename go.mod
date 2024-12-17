@@ -10,7 +10,7 @@ require (
 	github.com/smartystreets/goconvey v1.8.1
 	golang.org/x/sys v0.26.0
 	google.golang.org/grpc v1.56.3
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.36.0
 )
 
 require (
