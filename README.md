@@ -73,8 +73,6 @@ import _ "github.com/smartystreets/goconvey/convey"
 
 ## Installation
 
-Require [Go 1.9](https://golang.org/doc/go1.9#test-helper).
-
 ```sh
 go get github.com/powerman/check
 ```
