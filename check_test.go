@@ -1,4 +1,4 @@
-//nolint:goerr113 // It's just a test.
+//nolint:err113 // It's just a test.
 package check_test
 
 import (
@@ -21,10 +21,6 @@ import (
 
 	"github.com/powerman/check"
 )
-
-func init() {
-	time.Local = time.UTC
-}
 
 type (
 	myInt    int
@@ -155,7 +151,7 @@ var (
 	xTime                     = time.Now()
 	xTimeEST                  = xTime.In(func() *time.Location { loc, _ := time.LoadLocation("EST"); return loc }())
 	xProto                    = timestamppb.Now()
-	xGRPCErr                  = status.Error(codes.Unknown, "unknown")
+	xGRPCErr                  = status.Error(codes.Unknown, "unknown") //nolint:errname // Consistent var name.
 )
 
 func TestTODO(tt *testing.T) {
@@ -497,7 +493,7 @@ func TestCheckerEqual(tt *testing.T) {
 	todo.NotDeepEqual(nil, nil)
 
 	// Equal match, DeepEqual not match.
-	t.False(xTime == xTimeEST) //nolint:revive // Need == instead of Equal() here.
+	t.False(xTime == xTimeEST) //nolint:revive,staticcheck // Need == instead of Equal() here.
 	t.Equal(xTime, xTimeEST)
 	t.EQ(xTime, xTimeEST)
 	t.DeepEqual(xTime, xTimeEST)
@@ -1677,7 +1673,16 @@ func TestCheckers(t *testing.T) {
 			{true, false, false, fmt.Errorf("wrapped2: %w", fmt.Errorf("wrapped: %w", io.EOF)), io.EOF},
 			{true, false, false, fmt.Errorf("wrapped2: %w", pkgerrors.Wrap(io.EOF, "wrapped")), io.EOF},
 			{true, false, false, pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"), io.EOF},
-			{true, false, false, pkgerrors.Wrap(pkgerrors.Wrap(fmt.Errorf("wrapped4: %w", fmt.Errorf("wrapped3: %w", pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"))), "wrapped5"), "wrapped6"), io.EOF},
+			{
+				true,
+				false,
+				false,
+				pkgerrors.Wrap(
+					pkgerrors.Wrap(fmt.Errorf("wrapped4: %w", fmt.Errorf("wrapped3: %w", pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"))), "wrapped5"),
+					"wrapped6",
+				),
+				io.EOF,
+			},
 			{false, false, false, io.EOF, &myError{"EOF"}},
 			{true, true, true, xGRPCErr, xGRPCErr},
 			{true, true, false, xGRPCErr, status.Error(codes.Unknown, "unknown")},
@@ -1741,12 +1746,12 @@ func TestCheckers(t *testing.T) {
 		todo.PanicMatch(func() {}, `test`)
 		todo.PanicNotMatch(func() {}, `test`)
 
-		t.PanicMatch(func() { panic(nil) }, ``)              //nolint:govet // Testing nil panic.
-		todo.PanicNotMatch(func() { panic(nil) }, ``)        //nolint:govet // Testing nil panic.
-		t.PanicMatch(func() { panic(nil) }, `^<nil>$`)       //nolint:govet // Testing nil panic.
-		todo.PanicNotMatch(func() { panic(nil) }, `^<nil>$`) //nolint:govet // Testing nil panic.
-		t.PanicNotMatch(func() { panic(nil) }, `test`)       //nolint:govet // Testing nil panic.
-		todo.PanicMatch(func() { panic(nil) }, `test`)       //nolint:govet // Testing nil panic.
+		t.PanicMatch(func() { panic(nil) }, ``)                                     //nolint:govet // Testing nil panic.
+		todo.PanicNotMatch(func() { panic(nil) }, ``)                               //nolint:govet // Testing nil panic.
+		t.PanicMatch(func() { panic(nil) }, `panic called with nil argument`)       //nolint:govet // Testing nil panic.
+		todo.PanicNotMatch(func() { panic(nil) }, `panic called with nil argument`) //nolint:govet // Testing nil panic.
+		t.PanicNotMatch(func() { panic(nil) }, `test`)                              //nolint:govet // Testing nil panic.
+		todo.PanicMatch(func() { panic(nil) }, `test`)                              //nolint:govet // Testing nil panic.
 
 		t.PanicMatch(func() { panic("") }, regexp.MustCompile(`^$`))
 		t.PanicMatch(func() { panic("oops") }, `(?i)Oops`)
