@@ -1,6 +1,6 @@
 module github.com/powerman/check
 
-go 1.24
+go 1.24.6
 
 require (
 	github.com/davecgh/go-spew v1.1.1
