@@ -1290,11 +1290,11 @@ func half(v any) any {
 		return val.Uint() / 2
 	case reflect.Float32, reflect.Float64:
 		return val.Float() / 2
-	case reflect.Complex128, reflect.Complex64: // ???
-	// No meaningful "half":
-	case reflect.Array, reflect.Slice, reflect.Map, reflect.Struct, reflect.Bool, reflect.String:
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Invalid:
-	case reflect.Ptr, reflect.UnsafePointer:
+	case reflect.Complex128, reflect.Complex64, // ???
+		// No meaningful "half":
+		reflect.Array, reflect.Slice, reflect.Map, reflect.Struct, reflect.Bool, reflect.String,
+		reflect.Chan, reflect.Func, reflect.Interface, reflect.Invalid,
+		reflect.Pointer, reflect.UnsafePointer:
 	}
 	panic(fmt.Sprintf("can't get half from %#v", v))
 }
