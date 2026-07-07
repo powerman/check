@@ -187,6 +187,28 @@ func TestError(tt *testing.T) {
 	t.Error("format: %q", "message")
 }
 
+func TestErrorf(tt *testing.T) {
+	tt.Parallel()
+	t := check.T(tt)
+	t.TODO().Errorf("message %d", 1)
+	t.TODO().Errorf("format: %s", "message")
+}
+
+func TestFatal(tt *testing.T) {
+	tt.Parallel()
+	t := check.T(tt)
+	t.TODO().Fatal()
+	t.TODO().Fatal("message")
+	t.TODO().Fatal("format: %s", "message")
+}
+
+func TestFatalf(tt *testing.T) {
+	tt.Parallel()
+	t := check.T(tt)
+	t.TODO().Fatalf("message")
+	t.TODO().Fatalf("format: %s", "message")
+}
+
 func TestMustAll(tt *testing.T) {
 	tt.Parallel()
 	t := check.T(tt).MustAll()

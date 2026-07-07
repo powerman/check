@@ -179,13 +179,13 @@ func (t *C) report(ok bool, msg []any, checker string, name []string, args []any
 			t.Fail()
 		} else {
 			fmt.Fprintf(failure, "\n%s", colouredDiff(dump[0].diff(dump[1])))
-			t.Errorf("%s\n", failure)
+			t.T.Errorf("%s\n", failure)
 		}
 	} else {
 		if reportToGoConvey("", "", failureLong) == nil {
 			t.Fail()
 		} else {
-			t.Errorf("%s\n", failure)
+			t.T.Errorf("%s\n", failure)
 		}
 	}
 
@@ -402,6 +402,36 @@ func (t *C) NotNil(actual any, msg ...any) bool {
 func (t *C) Error(msg ...any) {
 	t.Helper()
 	t.report0(msg, false)
+}
+
+// Errorf is equivalent to Logf followed by Fail.
+//
+// It is like t.Errorf with TODO() and statistics support.
+func (t *C) Errorf(format string, args ...any) {
+	t.Helper()
+	t.report0(append([]any{format}, args...), false)
+}
+
+// Fatal is equivalent to Log followed by FailNow.
+//
+// It is like t.Fatal with TODO() and statistics support.
+func (t *C) Fatal(args ...any) {
+	t.Helper()
+	t.report0(args, false)
+	if !t.todo {
+		t.FailNow()
+	}
+}
+
+// Fatalf is equivalent to Logf followed by FailNow.
+//
+// It is like t.Fatalf with TODO() and statistics support.
+func (t *C) Fatalf(format string, args ...any) {
+	t.Helper()
+	t.report0(append([]any{format}, args...), false)
+	if !t.todo {
+		t.FailNow()
+	}
 }
 
 // True checks for cond == true.
