@@ -155,6 +155,7 @@ var (
 )
 
 func TestTODO(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	// Normal tests.
 	t.True(true)
@@ -178,6 +179,7 @@ func TestTODO(tt *testing.T) {
 }
 
 func TestError(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	t = t.TODO()
 	t.Error()
@@ -186,6 +188,7 @@ func TestError(tt *testing.T) {
 }
 
 func TestMustAll(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt).MustAll()
 	t.Nil(nil)
 	t.NotNil(false)
@@ -194,6 +197,7 @@ func TestMustAll(tt *testing.T) {
 }
 
 func TestMust(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	t.Must(t.Nil(nil))
 	t.Must(t.NotNil(false))
@@ -208,6 +212,7 @@ func beEqual(_ *check.C, actual, expected any) bool {
 }
 
 func TestCheckerShould(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	t.Should(bePositive, 42, "custom check!!!")
 	t.Panic(func() { t.Should(bePositive, "42", "bad arg type") })
@@ -220,6 +225,7 @@ func TestCheckerShould(tt *testing.T) {
 }
 
 func TestCheckerNilTrue(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	todo := t.TODO()
 
@@ -374,6 +380,7 @@ func TestCheckerNilTrue(tt *testing.T) {
 }
 
 func TestCheckerEqual(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	todo := t.TODO()
 
@@ -532,6 +539,7 @@ func TestCheckerEqual(tt *testing.T) {
 }
 
 func TestCheckerBytesEqual(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	todo := t.TODO()
 
@@ -564,6 +572,7 @@ func TestCheckerBytesEqual(tt *testing.T) {
 }
 
 func TestCheckerMatch(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	todo := t.TODO()
 
@@ -677,6 +686,7 @@ func TestCheckerMatch(tt *testing.T) {
 }
 
 func TestCheckerContains(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 
 	failures := []struct {
@@ -766,6 +776,7 @@ func TestCheckerContains(tt *testing.T) {
 }
 
 func TestCheckerHasKey(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 
 	failures := []struct {
@@ -842,6 +853,7 @@ func TestCheckerHasKey(tt *testing.T) {
 }
 
 func TestCheckerZero(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	todo := t.TODO()
 
@@ -922,6 +934,7 @@ func TestCheckerZero(tt *testing.T) {
 }
 
 func TestCheckerLen(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 
 	cases := []struct {
@@ -984,6 +997,7 @@ func TestCheckerLen(tt *testing.T) {
 	}
 	for _, v := range cases {
 		t.Run("", func(tt *testing.T) {
+			tt.Parallel()
 			t := check.T(tt)
 			todo := t.TODO()
 
@@ -1022,6 +1036,7 @@ func TestCheckerLen(tt *testing.T) {
 }
 
 func TestCheckerOrdered(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		panic bool
 		min   any
@@ -1083,9 +1098,9 @@ func TestCheckerOrdered(t *testing.T) {
 	}
 
 	t.Run("Less", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
-		t.Parallel()
 		for _, v := range cases {
 			actual, expected := v.min, v.max
 			if v.panic {
@@ -1111,9 +1126,9 @@ func TestCheckerOrdered(t *testing.T) {
 	})
 
 	t.Run("Greater", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
-		t.Parallel()
 		for _, v := range cases {
 			actual, expected := v.min, v.max
 			if v.panic {
@@ -1139,9 +1154,9 @@ func TestCheckerOrdered(t *testing.T) {
 	})
 
 	t.Run("Between", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
-		t.Parallel()
 		for _, v := range cases {
 			minimum, middle, maximum := v.min, v.mid, v.max
 			if v.panic {
@@ -1172,6 +1187,7 @@ func TestCheckerOrdered(t *testing.T) {
 }
 
 func TestCheckerApprox(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		panic    bool
 		actual   any
@@ -1234,9 +1250,9 @@ func TestCheckerApprox(t *testing.T) {
 	}
 
 	t.Run("Delta", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
-		t.Parallel()
 		for _, v := range cases {
 			if v.panic {
 				t.Panic(func() { t.InDelta(v.actual, v.expected, v.delta) })
@@ -1255,9 +1271,9 @@ func TestCheckerApprox(t *testing.T) {
 	})
 
 	t.Run("SMAPE", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
-		t.Parallel()
 		for _, v := range cases {
 			if v.panic || v.smape == 0 {
 				t.Panic(func() { t.InSMAPE(v.actual, v.expected, v.smape) })
@@ -1300,6 +1316,7 @@ func half(v any) any {
 }
 
 func TestCheckerSubstring(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		panic  bool
 		actual any
@@ -1375,9 +1392,9 @@ func TestCheckerSubstring(t *testing.T) {
 	}
 
 	t.Run("HasPrefix", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
-		t.Parallel()
 
 		for i, v := range cases {
 			msg := fmt.Sprintf("case %d: %#v, %#v, %#v", i, v.actual, v.prefix, v.suffix)
@@ -1411,9 +1428,9 @@ func TestCheckerSubstring(t *testing.T) {
 	})
 
 	t.Run("HasSuffix", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
-		t.Parallel()
 
 		for i, v := range cases {
 			msg := fmt.Sprintf("case %d: %#v, %#v, %#v", i, v.actual, v.suffix, v.suffix)
@@ -1448,6 +1465,7 @@ func TestCheckerSubstring(t *testing.T) {
 }
 
 func TestJSONEqual(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	todo := t.TODO()
 
@@ -1546,6 +1564,7 @@ func TestJSONEqual(tt *testing.T) {
 }
 
 func TestHasType(tt *testing.T) {
+	tt.Parallel()
 	t := check.T(tt)
 	todo := t.TODO()
 
@@ -1635,9 +1654,10 @@ func TestHasType(tt *testing.T) {
 }
 
 func TestCheckers(t *testing.T) {
+	t.Parallel()
 	t.Run("Err", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
-		t.Parallel()
 
 		cases := []struct {
 			err       bool
@@ -1690,6 +1710,7 @@ func TestCheckers(t *testing.T) {
 		}
 		for _, v := range cases {
 			t.Run("", func(tt *testing.T) {
+				tt.Parallel()
 				t := check.T(tt)
 				todo := t.TODO()
 				if v.err {
@@ -1714,9 +1735,9 @@ func TestCheckers(t *testing.T) {
 	})
 
 	t.Run("Panic", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
-		t.Parallel()
 
 		todo.Panic(func() {})
 		t.NotPanic(func() {})
@@ -1733,9 +1754,9 @@ func TestCheckers(t *testing.T) {
 	})
 
 	t.Run("PanicMatch", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
-		t.Parallel()
 
 		t.Panic(func() { t.PanicMatch(func() { panic(0) }, nil) })
 		t.Panic(func() { t.PanicMatch(func() { panic(0) }, t) })
@@ -1762,8 +1783,8 @@ func TestCheckers(t *testing.T) {
 	})
 
 	t.Run("Implements", func(tt *testing.T) {
+		tt.Parallel()
 		t := check.T(tt)
-		t.Parallel()
 
 		t.Implements(t, (*testing.TB)(nil))
 		t.Implements(os.Stdin, (*io.Reader)(nil))

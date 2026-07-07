@@ -8,6 +8,7 @@ import (
 	"math"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -160,7 +161,7 @@ func (t *C) report(ok bool, msg []any, checker string, name []string, args []any
 	)
 	failureShort := failure.String()
 	// Reverse order to show Actual: last.
-	for i := len(dump) - 1; i >= 0; i-- {
+	for i, v := range slices.Backward(dump) {
 		fmt.Fprintf(failure, "%-10s", name[i]+":")
 		switch name[i] {
 		case nameActual:
@@ -168,12 +169,12 @@ func (t *C) report(ok bool, msg []any, checker string, name []string, args []any
 		default:
 			fmt.Fprint(failure, ansiGreen)
 		}
-		fmt.Fprintf(failure, "%s%s", dump[i], ansiReset)
+		fmt.Fprintf(failure, "%s%s", v, ansiReset)
 	}
 	failureLong := failure.String()
 
-	wantDiff := len(dump) == 2 && name[0] == nameActual && name[1] == nameExpected //nolint:gosec // False positive.
-	if wantDiff {                                                                  //nolint:nestif // No idea how to simplify.
+	wantDiff := len(dump) == 2 && name[0] == nameActual && name[1] == nameExpected
+	if wantDiff { //nolint:nestif // No idea how to simplify.
 		if reportToGoConvey(dump[0].String(), dump[1].String(), failureShort) == nil {
 			t.Fail()
 		} else {

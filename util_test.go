@@ -6,6 +6,7 @@ import (
 )
 
 func TestFormat(tt *testing.T) {
+	tt.Parallel()
 	t := T(tt)
 	cases := []struct {
 		args []any
@@ -24,6 +25,7 @@ func TestFormat(tt *testing.T) {
 }
 
 func TestCaller(tt *testing.T) {
+	tt.Parallel()
 	t := T(tt)
 	t.Equal(callerFuncName(0), "TestCaller")
 	t.Equal(callerFuncName(1000), "<unknown>")

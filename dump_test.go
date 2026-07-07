@@ -10,6 +10,7 @@ import (
 )
 
 func TestDump(tt *testing.T) {
+	tt.Parallel()
 	t := T(tt)
 
 	type (
