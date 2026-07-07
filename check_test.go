@@ -312,12 +312,12 @@ func TestCheckerNilTrue(tt *testing.T) {
 	t.False(vSlice == nil)
 
 	// Subtle case when t.Nil() differs from == nil.
-	zIface = zIntPtr
-	t.Nil(zIface)
-	t.False(zIface == nil)
-	zIface = nil
-	t.Nil(zIface)
-	t.True(zIface == nil)
+	vIfaceNil := vIface
+	t.Nil(vIfaceNil)
+	t.False(vIfaceNil == nil)
+	vIfaceNil = nil
+	t.Nil(vIfaceNil)
+	t.True(vIfaceNil == nil)
 
 	cases := []struct {
 		equalNil bool
