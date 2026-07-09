@@ -5,8 +5,6 @@ import (
 	"io"
 	"testing"
 	"time"
-
-	_ "github.com/smartystreets/goconvey/convey"
 )
 
 func TestDump(tt *testing.T) {
