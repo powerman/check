@@ -485,7 +485,7 @@ func (t *C) NotBytesEqual(actual, expected []byte, msg ...any) bool {
 		!bytes.Equal(actual, expected))
 }
 
-// DeepEqual checks for [reflect.DeepEqual](actual, expected).
+// DeepEqual checks for [deepequal.DeepEqual](actual, expected).
 // It will also use Equal method for types which implements it
 // (e.g. [time.Time], decimal.Decimal, etc.).
 // It will use proto.Equal for protobuf messages.
@@ -501,7 +501,7 @@ func (t *C) DeepEqual(actual, expected any, msg ...any) bool {
 		deepequal.DeepEqual(actual, expected))
 }
 
-// NotDeepEqual checks for ![reflect.DeepEqual](actual, expected).
+// NotDeepEqual checks for ![deepequal.DeepEqual](actual, expected).
 // It will also use Equal method for types which implements it
 // (e.g. [time.Time], decimal.Decimal, etc.).
 // It will use proto.Equal for protobuf messages.
@@ -722,19 +722,19 @@ func (t *C) NotLen(actual any, expected int, msg ...any) bool {
 
 // Err checks is actual error is the same as expected error.
 //
-// It first runs all custom error checkers registered via [RegisterErrChecker],
-// and uses their result if any claims this pair.
-// Otherwise it uses the built-in comparison logic:
+// Custom error checkers registered via [RegisterErrChecker] run first.
+// If none claims the pair the built-in comparison operates on the
+// original error found by recursively unwrapping actual with
+// [errors.Unwrap]() and [github.com/pkg/errors.Cause]()
+// (multi-error takes only the first):
 //
-// If [errors.Is]() fails then it'll use more sophisticated logic:
+//   - If the original error is a gRPC status — proto.Equal.
+//   - Otherwise — Equal() method or same type and value ([deepequal.DeepEqual]).
 //
-// It tries to recursively unwrap actual before checking using
-// [errors.Unwrap]() and [github.com/pkg/errors.Cause]().
-// In case of multi-error (Unwrap() []error) it use only first error.
+// If both of these fail the comparison falls back to [errors.Is]()
+// on the original actual (not the unwrapped one).
 //
-// It will use proto.Equal for gRPC status errors.
-//
-// They may be a different instances, but must have same type and value.
+// They may be different instances, but must have the same type and value.
 //
 // Checking for nil is okay, but using Nil(actual) instead is more clean.
 func (t *C) Err(actual, expected error, msg ...any) bool {
