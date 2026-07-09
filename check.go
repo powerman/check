@@ -39,19 +39,6 @@ const (
 	nameExpected = "Expected"
 )
 
-// Parallel implements an internal workaround which have no visible
-// effect, so you should just call t.Parallel() as you usually do - it
-// will work as expected.
-func (t *C) Parallel() {
-	t.Helper()
-	// Goconvey anyway doesn't provide -test.cpu= and mixed output of
-	// parallel tests result in reporting failed tests at wrong places
-	// and with wrong failed tests count in web UI.
-	if !flags.detect().conveyJSON {
-		t.T.Parallel()
-	}
-}
-
 // T creates and returns new *C, which wraps given tt and supposed to be
 // used inplace of it, providing you with access to many useful helpers in
 // addition to standard methods of [*testing.T].
@@ -158,7 +145,6 @@ func (t *C) report(ok bool, msg []any, checker string, name []string, args []any
 		format(msg...),
 		ansiYellow, checker, ansiReset,
 	)
-	failureShort := failure.String()
 	// Reverse order to show Actual: last.
 	for i, v := range slices.Backward(dump) {
 		fmt.Fprintf(failure, "%-10s", name[i]+":")
@@ -170,23 +156,12 @@ func (t *C) report(ok bool, msg []any, checker string, name []string, args []any
 		}
 		fmt.Fprintf(failure, "%s%s", v, ansiReset)
 	}
-	failureLong := failure.String()
 
 	wantDiff := len(dump) == 2 && name[0] == nameActual && name[1] == nameExpected
-	if wantDiff { //nolint:nestif // No idea how to simplify.
-		if reportToGoConvey(dump[0].String(), dump[1].String(), failureShort) == nil {
-			t.Fail()
-		} else {
-			fmt.Fprintf(failure, "\n%s", colouredDiff(dump[0].diff(dump[1])))
-			t.T.Errorf("%s\n", failure)
-		}
-	} else {
-		if reportToGoConvey("", "", failureLong) == nil {
-			t.Fail()
-		} else {
-			t.T.Errorf("%s\n", failure)
-		}
+	if wantDiff {
+		fmt.Fprintf(failure, "\n%s", colouredDiff(dump[0].diff(dump[1])))
 	}
+	t.T.Errorf("%s\n", failure)
 
 	t.fail()
 

@@ -25,8 +25,6 @@ on steroids. :)
 - Compelling output from failed tests:
   - Very easy-to-read dumps for expected and actual values.
   - Same text diff you loved in testify/assert.
-  - Also visual diff in [GoConvey](http://goconvey.co/) web UI, if you
-    use it (recommended).
 - Statistics with amount of passed/failed checks.
 - Colored output in terminal.
 - 100% compatible with testing package - check package just provide
@@ -50,8 +48,8 @@ func TestSomething(tt *testing.T) {
     t.Equal(2, 2)
     t.Log("You can use new t just like usual *testing.T")
     t.Run("Subtests/Parallel example", func(tt *testing.T) {
+        tt.Parallel()
         t := check.T(tt)
-        t.Parallel()
         t.NotEqual(2, 3, "should not be 3!")
         obj, err := NewObj()
         if t.Nil(err) {
@@ -67,17 +65,24 @@ To get optional statistics about executed checkers add:
 func TestMain(m *testing.M) { check.TestMain(m) }
 ```
 
-When use goconvey tool, to get nice diff in web UI
-[add](https://github.com/smartystreets/goconvey/issues/513):
-
-```go
-import _ "github.com/smartystreets/goconvey/convey"
-```
-
 ## Installation
 
 ```sh
 go get github.com/powerman/check
+```
+
+## Hints
+
+If you use `t.Parallel()` inside subtest, prefer calling `tt.Parallel()`
+on the original `*testing.T` before wrapping with `check.T()` — this
+satisfies the `paralleltest` linter:
+
+```go
+t.Run("subtest", func(tt *testing.T) {
+    tt.Parallel()
+    t := check.T(tt)
+    t.Equal(2, 2)
+})
 ```
 
 ## TODO
@@ -85,7 +90,6 @@ go get github.com/powerman/check
 - Doc:
   - [ ] Add testable examples.
   - [ ] Show how text diff and stats looks like (both text and screenshot with colors).
-  - [ ] Show how `goconvey` diff looks like.
 - Questionable:
   - [ ] Support custom checkers from gocheck etc.?
   - [ ] Provide a way to force binary dump for utf8.Valid `string`/`[]byte`?

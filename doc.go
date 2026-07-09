@@ -7,7 +7,6 @@
 //   - Compelling output from failed tests:
 //   - Very easy-to-read dumps for expected and actual values.
 //   - Same text diff you loved in testify/assert.
-//   - Also visual diff in GoConvey web UI, if you use it (recommended).
 //   - Statistics with amount of passed/failed checks.
 //   - Colored output in terminal.
 //   - 100% compatible with testing package - check package just provide
@@ -30,8 +29,8 @@
 //		t.Equal(2, 2)
 //		t.Log("You can use new t just like usual *testing.T")
 //		t.Run("Subtests/Parallel example", func(tt *testing.T) {
+//			tt.Parallel()
 //			t := check.T(tt)
-//			t.Parallel()
 //			t.NotEqual(2, 3, "should not be 3!")
 //			obj, err := NewObj()
 //			if t.Nil(err) {
@@ -43,10 +42,6 @@
 // To get optional statistics about executed checkers add:
 //
 //	func TestMain(m *testing.M) { check.TestMain(m) }
-//
-// When use goconvey tool, to get nice diff in web UI add:
-//
-//	import _ "github.com/smartystreets/goconvey/convey"
 //
 // # Hints
 //
@@ -110,6 +105,16 @@
 // in last case just set this environment variable:
 //
 //	export GO_TEST_COLOR=1
+//
+// ★ If you use `t.Parallel()` inside subtest, prefer calling
+// `tt.Parallel()` on the original *[testing.T] before wrapping
+// with check.T() — this satisfies the `paralleltest` linter:
+//
+//	t.Run("subtest", func(tt *testing.T) {
+//		tt.Parallel()
+//		t := check.T(tt)
+//		t.Equal(2, 2)
+//	})
 //
 // # Contents
 //
