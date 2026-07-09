@@ -1,4 +1,4 @@
-//nolint:err113 // It's just a test.
+//nolint:err113,errname // It's just a test.
 package check_test
 
 import (
@@ -29,16 +29,29 @@ type (
 		i int
 		s string
 	}
-	myError    struct{ s string }
-	plainError struct{ msg string }
-	causeError struct {
+	myError     struct{ s string }
+	plainError  struct{ msg string }
+	targetErr   struct{ msg string }
+	ptrFieldErr struct{ msg string }
+	fieldError  struct {
+		ns  string
+		tag string
+	}
+	fieldErrors []*fieldError
+	causeError  struct {
 		msg string
 		err error
 	}
 )
 
-func (e myError) Error() string     { return e.s }
-func (e *plainError) Error() string { return e.msg }
+func (e myError) Error() string         { return e.s }
+func (e *plainError) Error() string     { return e.msg }
+func (e *targetErr) Error() string      { return e.msg }
+func (e *ptrFieldErr) Error() string    { return e.msg }
+func (e *fieldError) Error() string     { return e.ns + ":" + e.tag }
+func (e *fieldError) Namespace() string { return e.ns }
+func (e *fieldError) Tag() string       { return e.tag }
+func (fieldErrors) Error() string       { return "fieldErrors" }
 
 func (e *causeError) Error() string {
 	if e.msg != "" {
@@ -1893,4 +1906,248 @@ func TestCheckers(t *testing.T) {
 		t.NotImplements(&os.Stdin, (*io.Reader)(nil))
 		t.NotImplements(new(int), (*io.Reader)(nil))
 	})
+
+	t.Run("ErrIs", func(tt *testing.T) {
+		tt.Parallel()
+		t := check.T(tt)
+		todo := t.TODO()
+
+		errA := errors.New("ERR_A")
+		errB := errors.New("ERR_B")
+		wrappedA := fmt.Errorf("wrapped: %w", errA)
+
+		// errors.Is works through wrapping.
+		t.ErrIs(wrappedA, errA)
+		todo.NotErrIs(wrappedA, errA)
+		t.NotErrIs(wrappedA, errB)
+		todo.ErrIs(wrappedA, errB)
+		// errors.Is does not compare by value.
+		todo.ErrIs(errA, errors.New("ERR_A"))
+		t.NotErrIs(errA, errors.New("ERR_A"))
+		// Nil handling.
+		t.ErrIs(nil, nil)
+		todo.NotErrIs(nil, nil)
+		todo.ErrIs(nil, io.EOF)
+		t.NotErrIs(nil, io.EOF)
+		todo.ErrIs(io.EOF, nil)
+		t.NotErrIs(io.EOF, nil)
+	})
+
+	t.Run("ErrAs", func(tt *testing.T) {
+		tt.Parallel()
+		t := check.T(tt)
+		todo := t.TODO()
+
+		errA := &targetErr{msg: "ERR_A"}
+		errB := errors.New("ERR_B")
+		wrappedA := fmt.Errorf("wrapped: %w", errA)
+
+		// ErrAs finds the first error in the chain that matches the target type.
+		var got1 *targetErr
+		t.ErrAs(wrappedA, &got1)
+		t.NotNil(got1)
+		t.Equal(got1.msg, "ERR_A")
+
+		var got2 *targetErr
+		todo.ErrAs(errB, &got2)
+		t.Nil(got2)
+		t.NotErrAs(errB, &got2)
+
+		// nil target panics (as errors.As does).
+		t.Panic(func() { t.ErrAs(errA, nil) })
+	})
+
+	t.Run("NotErrAs", func(tt *testing.T) {
+		tt.Parallel()
+		t := check.T(tt)
+		todo := t.TODO()
+
+		errB := errors.New("ERR_B")
+
+		// NotErrAs passes when target type doesn't match.
+		var got1 *targetErr
+		todo.ErrAs(errB, &got1)
+		t.Nil(got1)
+		t.NotErrAs(errB, &got1)
+		t.Nil(got1)
+
+		// Nil actual: As(nil, target) is false.
+		var got2 *targetErr
+		todo.ErrAs(nil, &got2)
+		t.Nil(got2)
+	})
+
+	t.Run("ErrChar", func(tt *testing.T) {
+		tt.Parallel()
+		t := check.T(tt)
+		todo := t.TODO()
+
+		// Characterization of Err's value-comparison semantics
+		// after the %#v → TypeOf+deepequal switch.
+		//
+		// This documents the behavior; it is not a gate.
+
+		// Two errors.New instances with same text → equal (by type and
+		// underlying string value).
+		t.Err(errors.New("x"), errors.New("x"))
+		todo.NotErr(errors.New("x"), errors.New("x"))
+
+		// Wrapped fmt.Errorf → equal (errors.Is unwraps).
+		wrapped := fmt.Errorf("outer: %w", errors.New("inner"))
+		t.Err(wrapped, errors.New("inner"))
+		todo.NotErr(wrapped, errors.New("inner"))
+
+		// Pointer-field structs with same underlying value → equal
+		// (bugfix: %#v previously compared by pointer address).
+		p1 := &ptrFieldErr{msg: "same"}
+		p2 := &ptrFieldErr{msg: "same"}
+		t.Err(p1, p2)
+		todo.NotErr(p1, p2)
+
+		// Different field values → not equal.
+		todo.Err(&ptrFieldErr{msg: "a"}, &ptrFieldErr{msg: "b"})
+		t.NotErr(&ptrFieldErr{msg: "a"}, &ptrFieldErr{msg: "b"})
+
+		// Nil handling.
+		t.Err(nil, nil)
+		todo.NotErr(nil, nil)
+		todo.Err(nil, io.EOF)
+		t.NotErr(nil, io.EOF)
+	})
+
+	t.Run("FieldErrChecker", func(tt *testing.T) {
+		tt.Parallel()
+		t := check.T(tt)
+		todo := t.TODO()
+
+		// Single field errors.
+		fe1 := &fieldError{ns: "ns", tag: "tag"}
+		fe2 := &fieldError{ns: "ns", tag: "other"}
+		fe3 := &fieldError{ns: "other", tag: "tag"}
+
+		// BOTH sides are single fieldErr, same (Namespace, Tag).
+		t.Err(fe1, fe1)
+		todo.NotErr(fe1, fe1)
+		// BOTH sides are single fieldErr, different Tag.
+		todo.Err(fe1, fe2)
+		t.NotErr(fe1, fe2)
+		// BOTH sides are single fieldErr, different Namespace.
+		todo.Err(fe1, fe3)
+		t.NotErr(fe1, fe3)
+
+		// Slice of field errors.
+		slice1 := fieldErrors{
+			{ns: "ns1", tag: "tag1"},
+			{ns: "ns2", tag: "tag2"},
+		}
+		slice2 := fieldErrors{
+			{ns: "ns1", tag: "tag1"},
+			{ns: "ns2", tag: "tag2"},
+		}
+		slice3 := fieldErrors{
+			{ns: "ns1", tag: "tag1"},
+		}
+
+		// Equal slices (same order).
+		t.Err(slice1, slice2)
+		todo.NotErr(slice1, slice2)
+		// Order independence (SortEqual semantics).
+		t.Err(slice1, fieldErrors{
+			{ns: "ns2", tag: "tag2"},
+			{ns: "ns1", tag: "tag1"},
+		})
+		todo.NotErr(slice1, fieldErrors{
+			{ns: "ns2", tag: "tag2"},
+			{ns: "ns1", tag: "tag1"},
+		})
+		// Duplicate elements with order independence.
+		t.Err(fieldErrors{
+			{ns: "n1", tag: "t1"},
+			{ns: "n2", tag: "t2"},
+			{ns: "n1", tag: "t1"},
+		}, fieldErrors{
+			{ns: "n1", tag: "t1"},
+			{ns: "n1", tag: "t1"},
+			{ns: "n2", tag: "t2"},
+		})
+		todo.NotErr(fieldErrors{
+			{ns: "n1", tag: "t1"},
+			{ns: "n2", tag: "t2"},
+			{ns: "n1", tag: "t1"},
+		}, fieldErrors{
+			{ns: "n1", tag: "t1"},
+			{ns: "n1", tag: "t1"},
+			{ns: "n2", tag: "t2"},
+		})
+		// Different length→ not equal.
+		todo.Err(slice1, slice3)
+		t.NotErr(slice1, slice3)
+		// Different content → not equal.
+		todo.Err(slice1, fieldErrors{
+			{ns: "ns1", tag: "tag1"},
+			{ns: "ns2", tag: "DIFF"},
+		})
+		t.NotErr(slice1, fieldErrors{
+			{ns: "ns1", tag: "tag1"},
+			{ns: "ns2", tag: "DIFF"},
+		})
+
+		// Single vs one-element slice.
+		t.Err(fe1, fieldErrors{{ns: "ns", tag: "tag"}})
+		todo.NotErr(fe1, fieldErrors{{ns: "ns", tag: "tag"}})
+
+		// Empty slices.
+		t.Err(fieldErrors{}, fieldErrors{})
+		todo.NotErr(fieldErrors{}, fieldErrors{})
+
+		// Plain error to test mixed scenarios.
+		plain := errors.New("plain")
+
+		// Wrapped field error (unwrapping finds the fieldError).
+		wrapped := fmt.Errorf("wrapped: %w", fe1)
+		t.Err(wrapped, fe1)
+		todo.NotErr(wrapped, fe1)
+		// One side wrapped, other side plain → not claimed (ok=false).
+		t.NotErr(wrapped, plain)
+		t.NotErr(plain, wrapped)
+
+		// Only one side has field errors → not claimed by FieldErrChecker.
+		// Err falls through to existing logic.
+		t.NotErr(fe1, plain)
+		t.NotErr(plain, fe1)
+	})
+}
+
+type alwaysMatchChecker struct{}
+
+func (alwaysMatchChecker) Error() string { return "always" }
+
+//nolint:paralleltest // Modifies global registry, cannot run in parallel.
+func TestResetErrCheckers(tt *testing.T) {
+	always := &alwaysMatchChecker{}
+
+	// Register a custom checker that claims every pair.
+	check.RegisterErrChecker(func(_, _ error) (equal, ok bool) {
+		return true, true
+	})
+
+	// Custom checker makes Err claim any pair as equal.
+	tt.Run("custom_claimed", func(tt *testing.T) {
+		t := check.T(tt)
+		t.Err(always, io.EOF)
+	})
+
+	// Reset removes the custom checker AND the default FieldErrChecker.
+	check.ResetErrCheckers()
+
+	// After reset, Err uses built-in logic: different types → not equal.
+	tt.Run("after_reset", func(tt *testing.T) {
+		t := check.T(tt)
+		todo := t.TODO()
+		todo.Err(always, io.EOF)
+		t.NotErr(always, io.EOF)
+	})
+
+	// Re-register FieldErrChecker to restore default state.
+	check.RegisterErrChecker(check.FieldErrChecker)
 }

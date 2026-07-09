@@ -722,7 +722,11 @@ func (t *C) NotLen(actual any, expected int, msg ...any) bool {
 
 // Err checks is actual error is the same as expected error.
 //
-// If [errors.Is]() fails then it'll use more sofiscated logic:
+// It first runs all custom error checkers registered via [RegisterErrChecker],
+// and uses their result if any claims this pair.
+// Otherwise it uses the built-in comparison logic:
+//
+// If [errors.Is]() fails then it'll use more sophisticated logic:
 //
 // It tries to recursively unwrap actual before checking using
 // [errors.Unwrap]() and [github.com/pkg/errors.Cause]().
@@ -735,12 +739,17 @@ func (t *C) NotLen(actual any, expected int, msg ...any) bool {
 // Checking for nil is okay, but using Nil(actual) instead is more clean.
 func (t *C) Err(actual, expected error, msg ...any) bool {
 	t.Helper()
-	actual2 := unwrapErr(actual)
-	equal := fmt.Sprintf("%#v", actual2) == fmt.Sprintf("%#v", expected)
-	_, proto1 := actual2.(interface{ GRPCStatus() *status.Status })
-	_, proto2 := expected.(interface{ GRPCStatus() *status.Status })
-	if proto1 || proto2 {
-		equal = proto.Equal(status.Convert(actual2).Proto(), status.Convert(expected).Proto())
+	equal, claimed := runCheckers(actual, expected)
+	if !claimed {
+		actual2 := unwrapErr(actual)
+		_, proto1 := actual2.(interface{ GRPCStatus() *status.Status })
+		_, proto2 := expected.(interface{ GRPCStatus() *status.Status })
+		if proto1 || proto2 {
+			equal = proto.Equal(status.Convert(actual2).Proto(), status.Convert(expected).Proto())
+		} else {
+			equal = reflect.TypeOf(actual2) == reflect.TypeOf(expected) &&
+				deepequal.DeepEqual(actual2, expected)
+		}
 	}
 	if !equal {
 		equal = errors.Is(actual, expected)
@@ -799,17 +808,71 @@ func unwrapErr(err error) (actual error) {
 // Finally it'll use ![errors.Is]().
 func (t *C) NotErr(actual, expected error, msg ...any) bool {
 	t.Helper()
-	actual2 := unwrapErr(actual)
-	notEqual := fmt.Sprintf("%#v", actual2) != fmt.Sprintf("%#v", expected)
-	_, proto1 := actual2.(interface{ GRPCStatus() *status.Status })
-	_, proto2 := expected.(interface{ GRPCStatus() *status.Status })
-	if proto1 || proto2 {
-		notEqual = !proto.Equal(status.Convert(actual2).Proto(), status.Convert(expected).Proto())
+	equal, claimed := runCheckers(actual, expected)
+	var notEqual bool
+	if claimed {
+		notEqual = !equal
+	} else {
+		actual2 := unwrapErr(actual)
+		_, proto1 := actual2.(interface{ GRPCStatus() *status.Status })
+		_, proto2 := expected.(interface{ GRPCStatus() *status.Status })
+		if proto1 || proto2 {
+			notEqual = !proto.Equal(status.Convert(actual2).Proto(), status.Convert(expected).Proto())
+		} else {
+			notEqual = reflect.TypeOf(actual2) != reflect.TypeOf(expected) ||
+				!deepequal.DeepEqual(actual2, expected)
+		}
 	}
 	if notEqual {
 		notEqual = !errors.Is(actual, expected)
 	}
 	return t.report1(actual, msg, notEqual)
+}
+
+// ErrIs checks for [errors.Is]().
+//
+// Unlike Err which tries to unwrap to root cause and compare values,
+// ErrIs uses pure [errors.Is] semantics for exact error matching.
+//
+// See Err for value-equality checks. ErrIs is preferred when you want
+// the standard Go unwrapping semantics without value comparison.
+func (t *C) ErrIs(actual, expected error, msg ...any) bool {
+	t.Helper()
+	return t.report2(actual, expected, msg,
+		errors.Is(actual, expected))
+}
+
+// NotErrIs checks for ![errors.Is]().
+//
+// See ErrIs for details. Note that nil is not matched by [errors.Is]
+// against any non-nil error, so NotErrIs(nil, [io.EOF]) passes.
+func (t *C) NotErrIs(actual, expected error, msg ...any) bool {
+	t.Helper()
+	return t.report1(actual, msg,
+		!errors.Is(actual, expected))
+}
+
+// ErrAs checks for [errors.As].
+//
+// target must be a non-nil pointer to an error type or to an interface,
+// as required by [errors.As]. On success target is filled
+// with the matched error value. See [errors.As] documentation for details.
+func (t *C) ErrAs(actual error, target any, msg ...any) bool {
+	t.Helper()
+	return t.report2(actual, target, msg,
+		errors.As(actual, target))
+}
+
+// NotErrAs checks for ![errors.As].
+//
+// target must be a non-nil pointer to an error type or to an interface,
+// as required by [errors.As]. Note that [errors.As] may still fill target
+// with a matched error even when this check returns true,
+// because [errors.As] is always called regardless of the negated result.
+func (t *C) NotErrAs(actual error, target any, msg ...any) bool {
+	t.Helper()
+	return t.report1(actual, msg,
+		!errors.As(actual, target))
 }
 
 // Panic checks is actual() panics.

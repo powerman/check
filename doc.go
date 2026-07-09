@@ -64,6 +64,16 @@
 //	t.Err(io.EOF, errors.New("EOF"))       // this works
 //	t.DeepEqual(io.EOF, errors.New("EOF")) // this works too
 //
+//	// ErrIs/ErrAs are pure errors.Is/errors.As wrappers:
+//	t.ErrIs(err, io.EOF)            // errors.Is(err, io.EOF)
+//	t.ErrAs(err, &targetType)       // errors.As(err, &targetType)
+//
+//	// When to use which:
+//	//   - Err    — same type and value (unwraps to root, compares by value)
+//	//   - ErrIs  — standard errors.Is (not value comparison)
+//	//   - ErrAs  — extract the first matching error type
+//	//   - Match  — check by error text against a regexp
+//
 // ★ Each check returns bool, so you can easily skip problematic code:
 //
 //	if t.Nil(err) {
@@ -137,6 +147,8 @@
 //	Equal           NotEqual           EQ  NE
 //	DeepEqual       NotDeepEqual
 //	Err             NotErr
+//	ErrIs           NotErrIs
+//	ErrAs           NotErrAs
 //	BytesEqual      NotBytesEqual
 //	JSONEqual
 //
