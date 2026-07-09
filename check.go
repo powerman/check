@@ -489,24 +489,35 @@ func (t *C) NotBytesEqual(actual, expected []byte, msg ...any) bool {
 // It will also use Equal method for types which implements it
 // (e.g. [time.Time], decimal.Decimal, etc.).
 // It will use proto.Equal for protobuf messages.
+//
+// Custom equal checkers registered via [RegisterEqualChecker] run first.
 func (t *C) DeepEqual(actual, expected any, msg ...any) bool {
 	t.Helper()
-	protoActual, proto1 := actual.(protoreflect.ProtoMessage)
-	protoExpected, proto2 := expected.(protoreflect.ProtoMessage)
-	if proto1 && proto2 {
-		return t.report2(actual, expected, msg,
-			proto.Equal(protoActual, protoExpected))
+	equal, claimed := runEqualCheckers(actual, expected)
+	if !claimed {
+		protoActual, proto1 := actual.(protoreflect.ProtoMessage)
+		protoExpected, proto2 := expected.(protoreflect.ProtoMessage)
+		if proto1 && proto2 {
+			equal = proto.Equal(protoActual, protoExpected)
+		} else {
+			equal = deepequal.DeepEqual(actual, expected)
+		}
 	}
-	return t.report2(actual, expected, msg,
-		deepequal.DeepEqual(actual, expected))
+	return t.report2(actual, expected, msg, equal)
 }
 
 // NotDeepEqual checks for ![deepequal.DeepEqual](actual, expected).
 // It will also use Equal method for types which implements it
 // (e.g. [time.Time], decimal.Decimal, etc.).
 // It will use proto.Equal for protobuf messages.
+//
+// Custom equal checkers registered via [RegisterEqualChecker] run first.
 func (t *C) NotDeepEqual(actual, expected any, msg ...any) bool {
 	t.Helper()
+	equal, claimed := runEqualCheckers(actual, expected)
+	if claimed {
+		return t.report1(actual, msg, !equal)
+	}
 	protoActual, proto1 := actual.(protoreflect.ProtoMessage)
 	protoExpected, proto2 := expected.(protoreflect.ProtoMessage)
 	if proto1 && proto2 {
