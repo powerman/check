@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-07-09
+
+### 🚀 Added
+
+- Add custom err checker framework, ErrIs/ErrAs helpers, and FieldErrChecker by @powerman in [5379277]
+- Add custom equal checker framework for DeepEqual/NotDeepEqual by @powerman in [7fcfc81]
+
+### 🐛 Fixed
+
+- Integer overflow in isInDelta for signed and unsigned types by @powerman in [2f1dd9f]
+
+### 📚 Documentation
+
+- Fix DeepEqual/Err method comments in check.go by @powerman in [22714d8]
+
+[1.11.0]: https://github.com/powerman/check/compare/v1.10.0..v1.11.0
+[2f1dd9f]: https://github.com/powerman/check/commit/2f1dd9fa004481d612fb5d337f4bd136b97ed35c
+[5379277]: https://github.com/powerman/check/commit/53792777a78da0210e9d7f3c68d2f0da964c946b
+[22714d8]: https://github.com/powerman/check/commit/22714d86d1fb9c5d00e3348bc534566ceaf9580b
+[7fcfc81]: https://github.com/powerman/check/commit/7fcfc819e3b76b0a50b686821aa279554d7f171d
+
 ## [1.10.0] - 2026-07-07
 
 ### 🚀 Added
