@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"os"
 	"reflect"
@@ -1315,6 +1316,48 @@ func TestCheckerApprox(t *testing.T) {
 		t.InSMAPE(0, 0, 0.5)
 		t.InSMAPE(0.0, 0.0, 0.5)
 	})
+}
+
+func TestCheckerApproxOverflow(t *testing.T) {
+	t.Parallel()
+
+	// Regression tests for integer overflow in isInDelta:
+	// the old e-d/e+d range check wrapped at uint/int64 extremes.
+
+	type overflowCase struct {
+		actual   any
+		expected any
+		delta    any
+		inDelta  bool // whether InDelta should return true
+	}
+
+	overflowCases := []overflowCase{
+		// Unsigned: basic cases with wrap-around risk
+		{uint(0), uint(0), uint(1), true},
+		{uint(1), uint(0), uint(1), true},
+		{uint64(math.MaxUint64), uint64(math.MaxUint64), uint64(1), true},
+		{uint64(math.MaxUint64), uint64(0), uint64(1), false},
+		// Signed: MaxInt64 boundaries
+		{int64(math.MaxInt64), int64(math.MaxInt64 - 1), int64(2), true},
+		{int64(math.MinInt64), int64(math.MinInt64 + 1), int64(2), true},
+		// Signed: opposite signs — large actual distance, small delta
+		{int64(math.MaxInt64), int64(math.MinInt64), int64(1), false},
+		{int64(math.MinInt64), int64(math.MaxInt64), int64(1), false},
+	}
+
+	for _, v := range overflowCases {
+		t.Run("", func(tt *testing.T) {
+			tt.Parallel()
+			c := check.T(tt)
+			if v.inDelta {
+				c.InDelta(v.actual, v.expected, v.delta)
+				c.InDelta(v.expected, v.actual, v.delta)
+			} else {
+				c.NotInDelta(v.actual, v.expected, v.delta)
+				c.NotInDelta(v.expected, v.actual, v.delta)
+			}
+		})
+	}
 }
 
 func half(v any) any {

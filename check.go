@@ -1123,11 +1123,27 @@ func (t *C) InDelta(actual, expected, delta any, msg ...any) bool {
 func isInDelta(actual, expected, delta any) bool {
 	switch v, e, d := reflect.ValueOf(actual), reflect.ValueOf(expected), reflect.ValueOf(delta); v.Kind() { //nolint:exhaustive // Covered by default case.
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		minimum, maximum := e.Int()-d.Int(), e.Int()+d.Int()
-		return minimum <= v.Int() && v.Int() <= maximum
+		dd := d.Int()
+		if dd < 0 {
+			return false // negative delta: preserve old always-false behavior
+		}
+		a, e2 := v.Int(), e.Int()
+		var diff uint64 // |a-e2| computed without overflow via two's complement
+		if a >= e2 {
+			diff = uint64(a) - uint64(e2) //nolint:gosec // Two's complement: exact even when a-e2 overflows int64.
+		} else {
+			diff = uint64(e2) - uint64(a) //nolint:gosec // Two's complement: exact even when e2-a overflows int64.
+		}
+		return diff <= uint64(dd)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		minimum, maximum := e.Uint()-d.Uint(), e.Uint()+d.Uint()
-		return minimum <= v.Uint() && v.Uint() <= maximum
+		a, e2, dd := v.Uint(), e.Uint(), d.Uint()
+		var diff uint64
+		if a >= e2 {
+			diff = a - e2
+		} else {
+			diff = e2 - a
+		}
+		return diff <= dd
 	case reflect.Float32, reflect.Float64:
 		minimum, maximum := e.Float()-d.Float(), e.Float()+d.Float()
 		return minimum <= v.Float() && v.Float() <= maximum
