@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	pkgerrors "github.com/pkg/errors" //nolint:depguard // By design.
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -30,10 +29,40 @@ type (
 		i int
 		s string
 	}
-	myError struct{ s string }
+	myError    struct{ s string }
+	plainError struct{ msg string }
+	causeError struct {
+		msg string
+		err error
+	}
 )
 
-func (e myError) Error() string { return e.s }
+func (e myError) Error() string     { return e.s }
+func (e *plainError) Error() string { return e.msg }
+
+func (e *causeError) Error() string {
+	if e.msg != "" {
+		return e.msg
+	}
+	if e.err != nil {
+		return e.err.Error()
+	}
+	return ""
+}
+func (e *causeError) Cause() error  { return e.err }
+func (e *causeError) Unwrap() error { return e.err }
+
+func pkgerrorsNew() error {
+	return &plainError{msg: "EOF"}
+}
+
+func pkgerrorsWithStack(err error) error {
+	return &causeError{err: err}
+}
+
+func pkgerrorsWrap(err error, msg string) error {
+	return &causeError{msg: msg, err: err}
+}
 
 var (
 	// Zero values for standard types.
@@ -1740,13 +1769,13 @@ func TestCheckers(t *testing.T) {
 			{true, true, false, &net.OpError{}, &net.OpError{}},
 			{true, true, true, io.EOF, io.EOF},
 			{true, true, false, io.EOF, errors.New("EOF")},
-			{false, false, false, pkgerrors.New("EOF"), io.EOF},
-			{false, false, false, pkgerrors.New("EOF"), errors.New("EOF")},
-			{true, true, false, pkgerrors.New("EOF"), pkgerrors.New("EOF")},
-			{true, false, false, pkgerrors.WithStack(io.EOF), io.EOF},
-			{true, false, false, pkgerrors.Wrap(io.EOF, "wrapped"), io.EOF},
-			{true, false, false, pkgerrors.Wrap(io.EOF, "wrapped"), errors.New("EOF")},
-			{true, false, false, pkgerrors.Wrap(pkgerrors.Wrap(io.EOF, "wrapped"), "wrapped2"), io.EOF},
+			{false, false, false, pkgerrorsNew(), io.EOF},
+			{false, false, false, pkgerrorsNew(), errors.New("EOF")},
+			{true, true, false, pkgerrorsNew(), pkgerrorsNew()},
+			{true, false, false, pkgerrorsWithStack(io.EOF), io.EOF},
+			{true, false, false, pkgerrorsWrap(io.EOF, "wrapped"), io.EOF},
+			{true, false, false, pkgerrorsWrap(io.EOF, "wrapped"), errors.New("EOF")},
+			{true, false, false, pkgerrorsWrap(pkgerrorsWrap(io.EOF, "wrapped"), "wrapped2"), io.EOF},
 			{true, false, false, fmt.Errorf("wrapped: %w", io.EOF), io.EOF},
 			{true, false, false, fmt.Errorf("wrapped: %w", io.EOF), errors.New("EOF")},
 			{false, false, false, fmt.Errorf("wrapped: %w", io.EOF), &myError{"EOF"}},
@@ -1756,14 +1785,17 @@ func TestCheckers(t *testing.T) {
 			{true, false, false, fmt.Errorf("wrapped[]: %w %w", &myError{"EOF"}, io.EOF), &myError{"EOF"}},
 			{false, false, false, fmt.Errorf("wrapped[]: %w %w", io.EOF, &myError{"EOF"}), &myError{"EOF"}},
 			{true, false, false, fmt.Errorf("wrapped2: %w", fmt.Errorf("wrapped: %w", io.EOF)), io.EOF},
-			{true, false, false, fmt.Errorf("wrapped2: %w", pkgerrors.Wrap(io.EOF, "wrapped")), io.EOF},
-			{true, false, false, pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"), io.EOF},
+			{true, false, false, fmt.Errorf("wrapped2: %w", pkgerrorsWrap(io.EOF, "wrapped")), io.EOF},
+			{true, false, false, pkgerrorsWrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"), io.EOF},
 			{
 				true,
 				false,
 				false,
-				pkgerrors.Wrap(
-					pkgerrors.Wrap(fmt.Errorf("wrapped4: %w", fmt.Errorf("wrapped3: %w", pkgerrors.Wrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"))), "wrapped5"),
+				pkgerrorsWrap(
+					pkgerrorsWrap(
+						fmt.Errorf("wrapped4: %w", fmt.Errorf("wrapped3: %w", pkgerrorsWrap(fmt.Errorf("wrapped: %w", io.EOF), "wrapped2"))),
+						"wrapped5",
+					),
 					"wrapped6",
 				),
 				io.EOF,

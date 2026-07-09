@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	pkgerrors "github.com/pkg/errors" //nolint:depguard // By design.
 	"github.com/powerman/deepequal"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -774,11 +773,24 @@ func (t *C) Err(actual, expected error, msg ...any) bool {
 	return t.report2(actual, expected, msg, equal)
 }
 
+// cause replicates github.com/pkg/errors.Cause using duck typing,
+// to support that (archived) package without depending on it.
+func cause(err error) error {
+	for err != nil {
+		c, ok := err.(interface{ Cause() error })
+		if !ok {
+			break
+		}
+		err = c.Cause()
+	}
+	return err
+}
+
 func unwrapErr(err error) (actual error) {
 	defer func() { _ = recover() }()
 	actual = err
 	for {
-		actual = pkgerrors.Cause(actual)
+		actual = cause(actual)
 		var unwrapped error
 		switch wrapped := actual.(type) { //nolint:errorlint // False positive.
 		case interface{ Unwrap() error }:
