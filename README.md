@@ -16,7 +16,7 @@ Helpers to complement Go [testing](https://golang.org/pkg/testing/) package.
 Write tests with ease and fun!
 
 This package is like
-[testify/assert](https://godoc.org/github.com/stretchr/testify/assert)/
+[testify/assert](https://godoc.org/github.com/stretchr/testify/assert) and
 [testify/require](https://godoc.org/github.com/stretchr/testify/require)
 on steroids. :)
 
@@ -40,7 +40,7 @@ Just wrap each (including subtests) `*testing.T` using `check.T()` and write
 tests as usually with testing package. Call new methods provided by this
 package to have more clean/concise test code and cool dump/diff.
 
-> [!INFO]
+> [!NOTE]
 >
 > If you use `t.Parallel()` prefer calling `tt.Parallel()` on the original `*testing.T`
 > before wrapping with `check.T()` — this satisfies the `paralleltest` linter:
