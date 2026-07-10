@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/powerman/deepequal"
+	"github.com/powerman/check/internal/deepequal"
 )
 
 //nolint:gochecknoglobals // Const.

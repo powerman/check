@@ -3,7 +3,7 @@ package check
 import (
 	"sync"
 
-	"github.com/powerman/deepequal"
+	"github.com/powerman/check/internal/deepequal"
 )
 
 //nolint:gochecknoglobals // Registry of custom equal checkers.

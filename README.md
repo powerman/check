@@ -22,6 +22,7 @@ on steroids. :)
 
 ## Features
 
+- Zero external dependencies.
 - Compelling output from failed tests:
   - Very easy-to-read dumps for expected and actual values.
   - Same text diff you loved in testify.
