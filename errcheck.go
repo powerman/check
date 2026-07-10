@@ -16,7 +16,7 @@ var (
 type ErrChecker func(actual, expected error) (equal, ok bool)
 
 // ResetErrCheckers removes all registered error checkers,
-// including the built-in FieldErrChecker.
+// including the built-in CheckFieldError.
 //
 // Combine with RegisterErrChecker to define a custom chain in a specific order.
 //

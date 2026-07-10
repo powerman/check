@@ -5,9 +5,9 @@ import (
 	"reflect"
 )
 
-//nolint:gochecknoinits // Required for default FieldErrChecker registration.
+//nolint:gochecknoinits // Required for default CheckFieldError registration.
 func init() {
-	RegisterErrChecker(FieldErrChecker)
+	RegisterErrChecker(CheckFieldError)
 }
 
 // fieldError is a duck-typed interface for errors that carry per-field
@@ -21,13 +21,13 @@ type fieldErrKey struct {
 	ns, tag string
 }
 
-// FieldErrChecker compares two errors that (possibly after [errors.As]-style unwrapping)
+// CheckFieldError compares two errors that (possibly after [errors.As]-style unwrapping)
 // are validator.FieldError-like values or slices of them,
 // by an unordered multiset of (Namespace, Tag) pairs — order does not matter.
 // Works with any type structurally providing Namespace()/Tag().
 //
 // Auto-registered on loading the package.
-func FieldErrChecker(actual, expected error) (equal, ok bool) {
+func CheckFieldError(actual, expected error) (equal, ok bool) {
 	actualFEs, ok1 := extractFieldErrors(actual)
 	expectedFEs, ok2 := extractFieldErrors(expected)
 	if !ok1 || !ok2 {

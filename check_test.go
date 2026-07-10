@@ -14,11 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/powerman/check"
 )
 
@@ -133,7 +128,6 @@ var (
 	zJSON     json.RawMessage
 	zJSONPtr  *json.RawMessage
 	zTime     time.Time
-	zProto    emptypb.Empty
 	// Initialized but otherwise zero-like values.
 	vChan      = make(chan int)
 	vFunc      = func() {}
@@ -193,8 +187,6 @@ var (
 	xJSONPtr                  = &xJSON
 	xTime                     = time.Now()
 	xTimeEST                  = xTime.In(func() *time.Location { loc, _ := time.LoadLocation("EST"); return loc }())
-	xProto                    = timestamppb.Now()
-	xGRPCErr                  = status.Error(codes.Unknown, "unknown") //nolint:errname // Consistent var name.
 )
 
 func TestTODO(tt *testing.T) {
@@ -505,7 +497,6 @@ func TestCheckerEqual(tt *testing.T) {
 		{false, zJSON, xJSON},
 		{true, zJSONPtr, xJSONPtr},
 		{true, zTime, xTime},
-		{false, zProto, xProto}, //nolint:govet // This is dirty (copylocks), but it's a test.
 		{true, vChan, xChan},
 		{false, vFunc, xFunc},
 		{true, vIface, xIface},
@@ -587,8 +578,6 @@ func TestCheckerEqual(tt *testing.T) {
 		{true, &testing.T{}, &testing.T{}},
 		{false, []byte{2, 5}, []byte{2, 5}},
 		{false, notComparable{"a", []int{3, 5}}, notComparable{"a", []int{3, 5}}},
-		{false, zProto, zProto}, //nolint:govet // This is dirty (copylocks), but it's a test.
-		{false, xGRPCErr, xGRPCErr},
 	}
 	for _, v := range cases {
 		if v.comparable {
@@ -1814,9 +1803,6 @@ func TestCheckers(t *testing.T) {
 				io.EOF,
 			},
 			{false, false, false, io.EOF, &myError{"EOF"}},
-			{true, true, true, xGRPCErr, xGRPCErr},
-			{true, true, false, xGRPCErr, status.Error(codes.Unknown, "unknown")},
-			{false, false, false, xGRPCErr, nil},
 		}
 		for _, v := range cases {
 			t.Run("", func(tt *testing.T) {
@@ -2015,7 +2001,7 @@ func TestCheckers(t *testing.T) {
 		t.NotErr(nil, io.EOF)
 	})
 
-	t.Run("FieldErrChecker", func(tt *testing.T) {
+	t.Run("CheckFieldError", func(tt *testing.T) {
 		tt.Parallel()
 		t := check.T(tt)
 		todo := t.TODO()
@@ -2111,7 +2097,7 @@ func TestCheckers(t *testing.T) {
 		t.NotErr(wrapped, plain)
 		t.NotErr(plain, wrapped)
 
-		// Only one side has field errors → not claimed by FieldErrChecker.
+		// Only one side has field errors → not claimed by CheckFieldError.
 		// Err falls through to existing logic.
 		t.NotErr(fe1, plain)
 		t.NotErr(plain, fe1)
@@ -2137,7 +2123,7 @@ func TestResetErrCheckers(tt *testing.T) {
 		t.Err(always, io.EOF)
 	})
 
-	// Reset removes the custom checker AND the default FieldErrChecker.
+	// Reset removes the custom checker AND the default CheckFieldError.
 	check.ResetErrCheckers()
 
 	// After reset, Err uses built-in logic: different types → not equal.
@@ -2148,6 +2134,71 @@ func TestResetErrCheckers(tt *testing.T) {
 		t.NotErr(always, io.EOF)
 	})
 
-	// Re-register FieldErrChecker to restore default state.
-	check.RegisterErrChecker(check.FieldErrChecker)
+	// Re-register CheckFieldError to restore default state.
+	check.RegisterErrChecker(check.CheckFieldError)
+}
+
+// Fake types for probing-panic tests — they have ProtoReflect/GRPCStatus
+// methods but are NOT real protobuf messages or gRPC status errors.
+type fakeProto struct{}
+
+func (fakeProto) ProtoReflect() int { return 0 }
+
+type fakeGRPCErr struct{ msg string }
+
+func (f fakeGRPCErr) Error() string { return f.msg }
+func (fakeGRPCErr) GRPCStatus() int { return 0 }
+
+//nolint:paralleltest // Modifies global registry, cannot run in parallel.
+func TestDeepEqualProtoPanic(tt *testing.T) {
+	t := check.T(tt)
+
+	// Without checkproto imported, proto messages trigger a panic.
+	t.PanicMatch(func() { t.DeepEqual(fakeProto{}, fakeProto{}) },
+		"import github.com/powerman/checkproto")
+
+	// Mixed: one side has ProtoReflect.
+	t.PanicMatch(func() { t.DeepEqual(fakeProto{}, "string") },
+		"import github.com/powerman/checkproto")
+	t.PanicMatch(func() { t.DeepEqual("string", fakeProto{}) },
+		"import github.com/powerman/checkproto")
+
+	// Nil does not panic (no method lookup on nil).
+	t.DeepEqual(nil, nil)
+}
+
+//nolint:paralleltest // Modifies global registry, cannot run in parallel.
+func TestNotDeepEqualProtoPanic(tt *testing.T) {
+	t := check.T(tt)
+
+	t.PanicMatch(func() { t.NotDeepEqual(fakeProto{}, fakeProto{}) },
+		"import github.com/powerman/checkproto")
+}
+
+//nolint:paralleltest // Modifies global registry, cannot run in parallel.
+func TestErrGRPCStatusPanic(tt *testing.T) {
+	t := check.T(tt)
+
+	err := &fakeGRPCErr{msg: "test"}
+
+	// Without checkgrpc imported, gRPC status errors trigger a panic.
+	t.PanicMatch(func() { t.Err(err, err) },
+		"import github.com/powerman/checkgrpc")
+
+	// Mixed: expected has GRPCStatus.
+	t.PanicMatch(func() { t.Err(io.EOF, err) },
+		"import github.com/powerman/checkgrpc")
+
+	// Nil does not panic.
+	t.Err(nil, nil)
+}
+
+//nolint:paralleltest // Modifies global registry, cannot run in parallel.
+func TestNotErrGRPCStatusPanic(tt *testing.T) {
+	t := check.T(tt)
+
+	err := &fakeGRPCErr{msg: "test"}
+
+	t.PanicMatch(func() { t.NotErr(err, err) },
+		"import github.com/powerman/checkgrpc")
 }

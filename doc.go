@@ -126,6 +126,13 @@
 //		t.Equal(2, 2)
 //	})
 //
+// ★ Enable Protobuf message comparison and gRPC status error comparison by:
+//
+//	import _ "github.com/powerman/checkgrpc"
+//
+// This enables [proto.Equal] for protobuf messages in [DeepEqual]/[NotDeepEqual]
+// and gRPC status comparison in [Err]/[NotErr].
+//
 // # Contents
 //
 // There are few special functions (assertion, custom checkers, etc.).

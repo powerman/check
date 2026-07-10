@@ -14,9 +14,6 @@ import (
 	"time"
 
 	"github.com/powerman/deepequal"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 //nolint:gochecknoglobals // Const.
@@ -485,31 +482,37 @@ func (t *C) NotBytesEqual(actual, expected []byte, msg ...any) bool {
 		!bytes.Equal(actual, expected))
 }
 
+// hasMethod reports whether v has a method with the given name.
+func hasMethod(v any, name string) bool {
+	t := reflect.TypeOf(v)
+	if t == nil {
+		return false
+	}
+	_, found := t.MethodByName(name)
+	return found
+}
+
 // DeepEqual checks for [deepequal.DeepEqual](actual, expected).
-// It will also use Equal method for types which implements it
+// It will use Equal method for types which implements it
 // (e.g. [time.Time], decimal.Decimal, etc.).
-// It will use proto.Equal for protobuf messages.
 //
 // Custom equal checkers registered via [RegisterEqualChecker] run first.
 func (t *C) DeepEqual(actual, expected any, msg ...any) bool {
 	t.Helper()
 	equal, claimed := runEqualCheckers(actual, expected)
 	if !claimed {
-		protoActual, proto1 := actual.(protoreflect.ProtoMessage)
-		protoExpected, proto2 := expected.(protoreflect.ProtoMessage)
-		if proto1 && proto2 {
-			equal = proto.Equal(protoActual, protoExpected)
-		} else {
-			equal = deepequal.DeepEqual(actual, expected)
+		if hasMethod(actual, "ProtoReflect") || hasMethod(expected, "ProtoReflect") {
+			panic("check: protobuf message detected; " +
+				"import github.com/powerman/checkproto to compare protobuf messages")
 		}
+		equal = deepequal.DeepEqual(actual, expected)
 	}
 	return t.report2(actual, expected, msg, equal)
 }
 
 // NotDeepEqual checks for ![deepequal.DeepEqual](actual, expected).
-// It will also use Equal method for types which implements it
+// It will use Equal method for types which implements it
 // (e.g. [time.Time], decimal.Decimal, etc.).
-// It will use proto.Equal for protobuf messages.
 //
 // Custom equal checkers registered via [RegisterEqualChecker] run first.
 func (t *C) NotDeepEqual(actual, expected any, msg ...any) bool {
@@ -518,11 +521,9 @@ func (t *C) NotDeepEqual(actual, expected any, msg ...any) bool {
 	if claimed {
 		return t.report1(actual, msg, !equal)
 	}
-	protoActual, proto1 := actual.(protoreflect.ProtoMessage)
-	protoExpected, proto2 := expected.(protoreflect.ProtoMessage)
-	if proto1 && proto2 {
-		return t.report1(actual, msg,
-			!proto.Equal(protoActual, protoExpected))
+	if hasMethod(actual, "ProtoReflect") || hasMethod(expected, "ProtoReflect") {
+		panic("check: protobuf message detected; " +
+			"import github.com/powerman/checkproto to compare protobuf messages")
 	}
 	return t.report1(actual, msg,
 		!deepequal.DeepEqual(actual, expected))
@@ -737,15 +738,12 @@ func (t *C) NotLen(actual any, expected int, msg ...any) bool {
 // If none claims the pair the built-in comparison operates on the
 // original error found by recursively unwrapping actual with
 // [errors.Unwrap]() and [github.com/pkg/errors.Cause]()
-// (multi-error takes only the first):
-//
-//   - If the original error is a gRPC status — proto.Equal.
-//   - Otherwise — Equal() method or same type and value ([deepequal.DeepEqual]).
+// (multi-error takes only the first),
+// and then compares it using Equal() method or same type and value ([deepequal.DeepEqual]),
+// so they may be different instances, but must have the same type and value.
 //
 // If both of these fail the comparison falls back to [errors.Is]()
 // on the original actual (not the unwrapped one).
-//
-// They may be different instances, but must have the same type and value.
 //
 // Checking for nil is okay, but using Nil(actual) instead is more clean.
 func (t *C) Err(actual, expected error, msg ...any) bool {
@@ -753,14 +751,12 @@ func (t *C) Err(actual, expected error, msg ...any) bool {
 	equal, claimed := runCheckers(actual, expected)
 	if !claimed {
 		actual2 := unwrapErr(actual)
-		_, proto1 := actual2.(interface{ GRPCStatus() *status.Status })
-		_, proto2 := expected.(interface{ GRPCStatus() *status.Status })
-		if proto1 || proto2 {
-			equal = proto.Equal(status.Convert(actual2).Proto(), status.Convert(expected).Proto())
-		} else {
-			equal = reflect.TypeOf(actual2) == reflect.TypeOf(expected) &&
-				deepequal.DeepEqual(actual2, expected)
+		if hasMethod(actual2, "GRPCStatus") || hasMethod(expected, "GRPCStatus") {
+			panic("check: gRPC status error detected; " +
+				"import github.com/powerman/checkgrpc to compare gRPC status errors")
 		}
+		equal = reflect.TypeOf(actual2) == reflect.TypeOf(expected) &&
+			deepequal.DeepEqual(actual2, expected)
 	}
 	if !equal {
 		equal = errors.Is(actual, expected)
@@ -810,8 +806,6 @@ func unwrapErr(err error) (actual error) {
 // [errors.Unwrap]() and [github.com/pkg/errors.Cause]().
 // In case of multi-error (Unwrap() []error) it use only first error.
 //
-// It will use !proto.Equal for gRPC status errors.
-//
 // They must have either different types or values (or one should be nil).
 // Different instances with same type and value will be considered the
 // same error, and so is both nil.
@@ -825,14 +819,12 @@ func (t *C) NotErr(actual, expected error, msg ...any) bool {
 		notEqual = !equal
 	} else {
 		actual2 := unwrapErr(actual)
-		_, proto1 := actual2.(interface{ GRPCStatus() *status.Status })
-		_, proto2 := expected.(interface{ GRPCStatus() *status.Status })
-		if proto1 || proto2 {
-			notEqual = !proto.Equal(status.Convert(actual2).Proto(), status.Convert(expected).Proto())
-		} else {
-			notEqual = reflect.TypeOf(actual2) != reflect.TypeOf(expected) ||
-				!deepequal.DeepEqual(actual2, expected)
+		if hasMethod(actual2, "GRPCStatus") || hasMethod(expected, "GRPCStatus") {
+			panic("check: gRPC status error detected; " +
+				"import github.com/powerman/checkgrpc to compare gRPC status errors")
 		}
+		notEqual = reflect.TypeOf(actual2) != reflect.TypeOf(expected) ||
+			!deepequal.DeepEqual(actual2, expected)
 	}
 	if notEqual {
 		notEqual = !errors.Is(actual, expected)

@@ -11,20 +11,20 @@
 ![macOS | amd64 arm64](https://img.shields.io/badge/macOS-amd64%20arm64-royalblue)
 ![Windows | amd64 arm64](https://img.shields.io/badge/Windows-amd64%20arm64-royalblue)
 
-Helpers to complement Go [testing](https://golang.org/pkg/testing/)
-package.
+Helpers to complement Go [testing](https://golang.org/pkg/testing/) package.
 
 Write tests with ease and fun!
 
 This package is like
-[testify/assert](https://godoc.org/github.com/test-go/testify/assert)
+[testify/assert](https://godoc.org/github.com/stretchr/testify/assert)/
+[testify/require](https://godoc.org/github.com/stretchr/testify/require)
 on steroids. :)
 
 ## Features
 
 - Compelling output from failed tests:
   - Very easy-to-read dumps for expected and actual values.
-  - Same text diff you loved in testify/assert.
+  - Same text diff you loved in testify.
 - Statistics with amount of passed/failed checks.
 - Colored output in terminal.
 - 100% compatible with testing package - check package just provide
@@ -40,10 +40,16 @@ Just wrap each (including subtests) `*testing.T` using `check.T()` and write
 tests as usually with testing package. Call new methods provided by this
 package to have more clean/concise test code and cool dump/diff.
 
+> [!INFO]
+>
+> If you use `t.Parallel()` prefer calling `tt.Parallel()` on the original `*testing.T`
+> before wrapping with `check.T()` — this satisfies the `paralleltest` linter:
+
 ```go
 import "github.com/powerman/check"
 
 func TestSomething(tt *testing.T) {
+    tt.Parallel()
     t := check.T(tt)
     t.Equal(2, 2)
     t.Log("You can use new t just like usual *testing.T")
@@ -71,18 +77,30 @@ func TestMain(m *testing.M) { check.TestMain(m) }
 go get github.com/powerman/check
 ```
 
-## Hints
+## Custom Checkers
 
-If you use `t.Parallel()` inside subtest, prefer calling `tt.Parallel()`
-on the original `*testing.T` before wrapping with `check.T()` — this
-satisfies the `paralleltest` linter:
+You can extend `DeepEqual`/`NotDeepEqual` and `Err`/`NotErr`
+with custom comparison logic via `RegisterEqualChecker` and `RegisterErrChecker`.
+
+- This package enables [validator](https://github.com/go-playground/validator)
+  `FieldError` and `[]FieldError` comparison by `Namespace()`+`Tag()`
+  via `check.Err`/`check.NotErr`.
+
+### Protobuf / gRPC Support
+
+Protobuf message comparison and gRPC status error comparison have been extracted
+into separate modules to keep the core dependency-light:
+
+- **[checkproto](https://github.com/powerman/checkproto)** — enables
+  `proto.Equal` via `check.DeepEqual`/`check.NotDeepEqual` for protobuf messages.
+- **[checkgrpc](https://github.com/powerman/checkgrpc)** — enables
+  gRPC status comparison via `check.Err`/`check.NotErr`.
+  It also imports checkproto, so a single blank import covers both.
+
+Usage: just add a blank import in your test file or `TestMain`:
 
 ```go
-t.Run("subtest", func(tt *testing.T) {
-    tt.Parallel()
-    t := check.T(tt)
-    t.Equal(2, 2)
-})
+import _ "github.com/powerman/checkgrpc"
 ```
 
 ## TODO
@@ -91,11 +109,7 @@ t.Run("subtest", func(tt *testing.T) {
   - [ ] Add testable examples.
   - [ ] Show how text diff and stats looks like (both text and screenshot with colors).
 - Questionable:
-  - [ ] Support custom checkers from gocheck etc.?
   - [ ] Provide a way to force binary dump for utf8.Valid `string`/`[]byte`?
   - [ ] Count skipped tests (will have to overload `Skip`, `Skipf`, `SkipNow`)?
 - Complicated:
-  - [ ] Show line of source_test.go with failed test (like gocheck).
-  - [ ] Auto-detect missed `t:=check.T(tt)` - try to intercept `Run()` and
-        `Parallel()` for detecting using wrong `t` (looks like golangci-lint's
-        tparallel catch at least `Parallel()` case).
+  - [ ] Show line of source_test.go with failed test.

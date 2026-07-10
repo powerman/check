@@ -90,6 +90,11 @@ description = 'Run Go tests for a whole project'
 wait_for = ['lint:*']                            # Avoid interleaved output with linters.
 run = 'gotestsum -- -race -timeout=60s ./...'
 
+[tasks.'test:go-submodule']
+description = 'Run Go tests in the test/ submodule'
+wait_for = ['lint:*']
+run = 'cd test && gotestsum -- -race -timeout=60s ./...'
+
 [tasks.'cover:go:total']
 description = 'Show Go test coverage total'
 depends = 'cover:go:generate'
