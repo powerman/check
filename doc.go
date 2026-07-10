@@ -202,9 +202,14 @@
 //	HasSuffix       NotHasSuffix
 //	HasKey          NotHasKey
 //	Contains        NotContains
+//	SortEqual       NotSortEqual
+//	Subset          NotSubset
 //
 //	HasType         NotHasType
 //	Implements      NotImplements
+//
+//	FileExists      NotFileExists
+//	DirExists       NotDirExists
 //
 //	Panic           NotPanic
 //	PanicMatch      PanicNotMatch

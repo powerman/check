@@ -9,6 +9,7 @@ import (
 	"math"
 	"net"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"testing"
@@ -904,6 +905,173 @@ func TestCheckerHasKey(tt *testing.T) {
 	t.HasKey(map[int]string{2: "two", 5: "five", 10: "ten"}, 5)
 	t.HasKey(map[string]int{"two": 2, "five": 5, "ten": 10}, "five")
 	t.NotHasKey(map[string]int{"two": 2, "five": 5, "ten": 10}, "")
+}
+
+func TestCheckerSortEqual(tt *testing.T) {
+	tt.Parallel()
+	t := check.T(tt)
+	todo := t.TODO()
+
+	type point struct{ x, y int }
+
+	// Basic reordering.
+	t.SortEqual([]int{1, 2, 3}, []int{3, 1, 2})
+	todo.NotSortEqual([]int{1, 2, 3}, []int{3, 1, 2})
+
+	// Duplicates counted (multiset, not set) equality.
+	todo.SortEqual([]int{1, 1, 2}, []int{1, 2, 2})
+	t.NotSortEqual([]int{1, 1, 2}, []int{1, 2, 2})
+	t.SortEqual([]int{1, 1, 2}, []int{2, 1, 1})
+	todo.NotSortEqual([]int{1, 1, 2}, []int{2, 1, 1})
+
+	// Nil and empty slices are equal (unlike DeepEqual).
+	t.SortEqual([]int(nil), []int{})
+	todo.NotSortEqual([]int(nil), []int{})
+	t.SortEqual([]int(nil), []int(nil))
+	t.SortEqual([]int{}, []int{})
+
+	// Different length.
+	todo.SortEqual([]int{1, 2}, []int{1, 2, 3})
+	t.NotSortEqual([]int{1, 2}, []int{1, 2, 3})
+
+	// Arrays.
+	t.SortEqual([3]int{1, 2, 3}, [3]int{3, 2, 1})
+
+	// Unsortable elements are fine: matching does not sort them.
+	t.SortEqual(
+		[]point{{1, 2}, {3, 4}},
+		[]point{{3, 4}, {1, 2}},
+	)
+	todo.SortEqual(
+		[]point{{1, 2}, {3, 4}},
+		[]point{{3, 4}, {1, 3}},
+	)
+	t.NotSortEqual(
+		[]point{{1, 2}, {3, 4}},
+		[]point{{3, 4}, {1, 3}},
+	)
+
+	// []any with mixed element types, compared like DeepEqual.
+	t.SortEqual([]any{1, "a", true}, []any{true, 1, "a"})
+
+	// time.Time elements compared using .Equal (DeepEqual semantics), not ==.
+	t.SortEqual([]time.Time{xTime}, []time.Time{xTimeEST})
+
+	// Panics on non-slice/array actual or expected (incl. untyped nil).
+	t.PanicMatch(func() { t.SortEqual(42, []int{1}) }, "actual is not a slice or array")
+	t.PanicMatch(func() { t.SortEqual(nil, []int{1}) }, "actual is not a slice or array")
+	t.PanicMatch(func() { t.SortEqual([]int{1}, 42) }, "expected is not a slice or array")
+	t.PanicMatch(func() { t.SortEqual([]int{1}, nil) }, "expected is not a slice or array")
+}
+
+func TestCheckerSubset(tt *testing.T) {
+	tt.Parallel()
+	t := check.T(tt)
+	todo := t.TODO()
+
+	// Slice subset, multiset semantics, order-insensitive.
+	t.Subset([]int{1, 2, 3}, []int{2, 1})
+	todo.NotSubset([]int{1, 2, 3}, []int{2, 1})
+	t.Subset([]int{1, 2, 3}, []int{})
+	t.Subset([]int{1, 2, 3}, []int(nil))
+
+	// Diverges from testify: duplicates in expected are counted,
+	// so [1] is NOT a subset of [1,1] and [1,1] IS a subset of [1,1,2].
+	todo.Subset([]int{1}, []int{1, 1})
+	t.NotSubset([]int{1}, []int{1, 1})
+	t.Subset([]int{1, 1, 2}, []int{1, 1})
+
+	// Missing element.
+	todo.Subset([]int{1, 2}, []int{3})
+	t.NotSubset([]int{1, 2}, []int{3})
+
+	// Map subset: every expected key exists in actual with an equal value.
+	t.Subset(
+		map[string]int{"a": 1, "b": 2, "c": 3},
+		map[string]int{"a": 1, "b": 2},
+	)
+	// Missing key.
+	todo.Subset(
+		map[string]int{"a": 1},
+		map[string]int{"a": 1, "b": 2},
+	)
+	t.NotSubset(
+		map[string]int{"a": 1},
+		map[string]int{"a": 1, "b": 2},
+	)
+	// Value mismatch.
+	todo.Subset(
+		map[string]int{"a": 1, "b": 99},
+		map[string]int{"a": 1, "b": 2},
+	)
+	t.NotSubset(
+		map[string]int{"a": 1, "b": 99},
+		map[string]int{"a": 1, "b": 2},
+	)
+	// Empty/nil expected map is a subset of anything.
+	t.Subset(map[string]int{"a": 1}, make(map[string]int))
+	t.Subset(map[string]int{"a": 1}, map[string]int(nil))
+
+	// Kind mismatches panic.
+	t.PanicMatch(func() { t.Subset(make(map[string]int), []int{1}) }, "actual is not a slice or array")
+	t.PanicMatch(func() { t.Subset([]int{1}, make(map[string]int)) }, "actual is not a map")
+	t.PanicMatch(func() { t.Subset([]int{1}, 42) }, "expected is not a slice, array or map")
+	t.PanicMatch(func() { t.Subset([]int{1}, nil) }, "expected is not a slice, array or map")
+}
+
+// TestElemEqualUsesRegisteredChecker verifies SortEqual/Subset element comparison
+// consults the EqualChecker registry (see RegisterEqualChecker) before falling back
+// to DeepEqual, same as DeepEqual/NotDeepEqual do.
+//
+// Deliberately not parallel: it mutates the process-global equal checker registry,
+// so it must run to completion (incl. its Cleanup-based reset) before any
+// parallel test in this package touches DeepEqual/SortEqual/Subset.
+//
+//nolint:paralleltest // Modifies global registry, cannot run in parallel.
+func TestElemEqualUsesRegisteredChecker(tt *testing.T) {
+	t := check.T(tt)
+	t.Cleanup(check.ResetEqualCheckers)
+
+	type fakeElem struct{ id int }
+
+	// Claims only fakeElem pairs and treats them as always equal - this would
+	// be false under plain DeepEqual, proving the checker (not DeepEqual) decided.
+	check.RegisterEqualChecker(func(actual, expected any) (equal, ok bool) {
+		_, okA := actual.(fakeElem)
+		_, okB := expected.(fakeElem)
+		if !okA || !okB {
+			return false, false
+		}
+		return true, true
+	})
+
+	t.SortEqual([]fakeElem{{1}, {2}}, []fakeElem{{3}, {4}})
+	t.Subset([]fakeElem{{1}}, []fakeElem{{99}})
+}
+
+func TestFileDirExists(tt *testing.T) {
+	tt.Parallel()
+	t := check.T(tt)
+	todo := t.TODO()
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "file.txt")
+	t.Must(t.Nil(os.WriteFile(file, nil, 0o600)))
+	missing := filepath.Join(dir, "missing")
+
+	t.FileExists(file)
+	todo.NotFileExists(file)
+	t.NotFileExists(dir)
+	todo.FileExists(dir)
+	t.NotFileExists(missing)
+	todo.FileExists(missing)
+
+	t.DirExists(dir)
+	todo.NotDirExists(dir)
+	t.NotDirExists(file)
+	todo.DirExists(file)
+	t.NotDirExists(missing)
+	todo.DirExists(missing)
 }
 
 func TestCheckerZero(tt *testing.T) {

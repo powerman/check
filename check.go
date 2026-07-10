@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -1280,4 +1281,152 @@ func (t *checks) NotImplements(actual, expected any, msg ...any) bool {
 	t.tb.Helper()
 	return t.report2(actual, expected, msg,
 		!isImplements(actual, expected))
+}
+
+// SortEqual checks that actual and expected contain the same elements,
+// ignoring order (multiset equality, duplicates counted).
+//
+// Both actual and expected must be slices or arrays.
+// Elements need not be sortable and are compared like DeepEqual.
+// Nil and empty slices are equal (like BytesEqual, unlike DeepEqual).
+func (t *checks) SortEqual(actual, expected any, msg ...any) bool {
+	t.tb.Helper()
+	return t.report2(actual, expected, msg,
+		isSortEqual(actual, expected))
+}
+
+// NotSortEqual checks !SortEqual(actual, expected).
+//
+// See SortEqual about supported actual/expected types and check logic.
+func (t *checks) NotSortEqual(actual, expected any, msg ...any) bool {
+	t.tb.Helper()
+	return t.report1(actual, msg,
+		!isSortEqual(actual, expected))
+}
+
+func isSortEqual(actual, expected any) bool {
+	va, ve := reflect.ValueOf(actual), reflect.ValueOf(expected)
+	if va.Kind() != reflect.Slice && va.Kind() != reflect.Array {
+		panic("actual is not a slice or array")
+	}
+	if ve.Kind() != reflect.Slice && ve.Kind() != reflect.Array {
+		panic("expected is not a slice or array")
+	}
+	if va.Len() != ve.Len() {
+		return false
+	}
+	return isMultisetIn(va, ve)
+}
+
+// isMultisetIn reports whether every element of small has a distinct,
+// not-yet-used matching element in big, i.e. small is a multiset-subset of big.
+func isMultisetIn(small, big reflect.Value) bool {
+	used := make([]bool, big.Len())
+	for i := range small.Len() {
+		found := false
+		for j := range big.Len() {
+			if !used[j] && elemEqual(small.Index(i).Interface(), big.Index(j).Interface()) {
+				used[j], found = true, true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+// Subset checks that actual contains all elements of expected:
+// for slices/arrays - as multisets (duplicates counted), ignoring order;
+// for maps - every key of expected exists in actual with an equal value.
+//
+// actual and expected must both be slices/arrays or both be maps.
+// Elements/values are compared like DeepEqual.
+// An empty/nil expected is a subset of anything of the same kind.
+//
+// Note: unlike testify's Subset, duplicates are counted, so [1,1] is not a subset of [1].
+func (t *checks) Subset(actual, expected any, msg ...any) bool {
+	t.tb.Helper()
+	return t.report2(actual, expected, msg,
+		isSubset(actual, expected))
+}
+
+// NotSubset checks !Subset(actual, expected).
+//
+// See Subset about supported actual/expected types and check logic.
+func (t *checks) NotSubset(actual, expected any, msg ...any) bool {
+	t.tb.Helper()
+	return t.report1(actual, msg,
+		!isSubset(actual, expected))
+}
+
+func isSubset(actual, expected any) bool {
+	va, ve := reflect.ValueOf(actual), reflect.ValueOf(expected)
+	switch ve.Kind() { //nolint:exhaustive // Covered by default case.
+	case reflect.Map:
+		if va.Kind() != reflect.Map {
+			panic("actual is not a map")
+		}
+		return isMapSubset(va, ve)
+	case reflect.Slice, reflect.Array:
+		if va.Kind() != reflect.Slice && va.Kind() != reflect.Array {
+			panic("actual is not a slice or array")
+		}
+		return isMultisetIn(ve, va)
+	default:
+		panic("expected is not a slice, array or map")
+	}
+}
+
+func isMapSubset(actual, expected reflect.Value) bool {
+	iter := expected.MapRange()
+	for iter.Next() {
+		v := actual.MapIndex(iter.Key())
+		if !v.IsValid() || !elemEqual(v.Interface(), iter.Value().Interface()) {
+			return false
+		}
+	}
+	return true
+}
+
+// FileExists checks that path exists and is not a directory.
+//
+// A Stat error other than "not exists" (e.g. permission denied)
+// counts as "does not exist", same as testify.
+func (t *checks) FileExists(path string, msg ...any) bool {
+	t.tb.Helper()
+	fi, err := os.Stat(path)
+	return t.report1(path, msg,
+		err == nil && !fi.IsDir())
+}
+
+// NotFileExists checks that path does not exist or is a directory.
+//
+// See FileExists about Stat error handling.
+func (t *checks) NotFileExists(path string, msg ...any) bool {
+	t.tb.Helper()
+	fi, err := os.Stat(path)
+	return t.report1(path, msg,
+		err != nil || fi.IsDir())
+}
+
+// DirExists checks that path exists and is a directory.
+//
+// See FileExists about Stat error handling.
+func (t *checks) DirExists(path string, msg ...any) bool {
+	t.tb.Helper()
+	fi, err := os.Stat(path)
+	return t.report1(path, msg,
+		err == nil && fi.IsDir())
+}
+
+// NotDirExists checks that path does not exist or is not a directory.
+//
+// See FileExists about Stat error handling.
+func (t *checks) NotDirExists(path string, msg ...any) bool {
+	t.tb.Helper()
+	fi, err := os.Stat(path)
+	return t.report1(path, msg,
+		err != nil || !fi.IsDir())
 }
