@@ -126,12 +126,17 @@
 // ★ It will panic when called with arg of wrong type - because this
 // means bug in your test.
 //
-// ★ If you don't see colors in `go test` output it may happens because of
-// two reasons: either your $TERM doesn't contain substring "color" or
-// you're running `go test path/to/your/package`. To force colored output
-// in last case just set this environment variable:
+// ★ If you don't see colors in `go test` output it may happen because
+// either you're not running in a terminal or your $TERM is set to "dumb"
+// (or empty). To force colored output set one of these variables:
 //
+//	export FORCE_COLOR=1
+//	export CLICOLOR_FORCE=1
 //	export GO_TEST_COLOR=1
+//
+// To disable colors (overrides all other variables):
+//
+//	export NO_COLOR=1
 //
 // ★ With the legacy [T] (whose [C] does provide Run/Parallel),
 // if you use `t.Parallel()` inside a subtest,
