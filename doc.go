@@ -18,19 +18,25 @@
 //
 // # Quickstart
 //
-// Just wrap each (including subtests) [*testing.T] using check.T() and write
-// tests as usually with testing package. Call new methods provided by
-// this package to have more clean/concise test code and cool dump/diff.
+// Wrap each (including subtests) [*testing.T]/[*testing.B]/[*testing.F]
+// using [Must] and write tests as usually with testing package.
+// Call new methods provided by this package to have more clean/concise test code
+// and cool dump/diff.
+//
+// [Must] stops the test on the first failed check (like testify/require).
+// Use [New] instead for the softer, testify/assert-like behavior
+// where a failed check doesn't stop the test.
 //
 //	import "github.com/powerman/check"
 //
 //	func TestSomething(tt *testing.T) {
-//		t := check.T(tt)
+//		tt.Parallel()
+//		t := check.Must(tt)
 //		t.Equal(2, 2)
 //		t.Log("You can use new t just like usual *testing.T")
-//		t.Run("Subtests/Parallel example", func(tt *testing.T) {
+//		tt.Run("Subtests/Parallel example", func(tt *testing.T) {
 //			tt.Parallel()
-//			t := check.T(tt)
+//			t := check.Must(tt)
 //			t.NotEqual(2, 3, "should not be 3!")
 //			obj, err := NewObj()
 //			if t.Nil(err) {
@@ -42,6 +48,17 @@
 // To get optional statistics about executed checkers add:
 //
 //	func TestMain(m *testing.M) { check.TestMain(m) }
+//
+// [TB] (returned by [New]/[Must]) doesn't provide Run/Parallel:
+// call tb.Run()/tb.Parallel() on the original
+// [*testing.T]/[*testing.B]/[*testing.F] before wrapping it
+// (this also satisfies the paralleltest linter).
+//
+// [C] (returned by the legacy [T]) is a soft-mode-only,
+// [*testing.T]-only compatibility shell kept for old code:
+// it behaves exactly like it always did,
+// including direct access to the wrapped [*testing.T] via its T field,
+// and does provide Run/Parallel. New code should prefer [New]/[Must].
 //
 // # Hints
 //
@@ -116,15 +133,23 @@
 //
 //	export GO_TEST_COLOR=1
 //
-// ★ If you use `t.Parallel()` inside subtest, prefer calling
-// `tt.Parallel()` on the original *[testing.T] before wrapping
-// with check.T() — this satisfies the `paralleltest` linter:
+// ★ With the legacy [T] (whose [C] does provide Run/Parallel),
+// if you use `t.Parallel()` inside a subtest,
+// prefer calling `tt.Parallel()` on the original *[testing.T] before wrapping with check.T() —
+// this satisfies the `paralleltest` linter:
 //
 //	t.Run("subtest", func(tt *testing.T) {
 //		tt.Parallel()
 //		t := check.T(tt)
 //		t.Equal(2, 2)
 //	})
+//
+// ★ Inject an application base context (e.g. one carrying a slog handler)
+// into a test on top of the per-test cancellation/deadline
+// [testing.TB.Context] already provides:
+//
+//	t := check.Must(tt).MergeContext(appCtx)
+//	t.Context() // merged values and cancellation from both contexts
 //
 // ★ Enable Protobuf message comparison and gRPC status error comparison by:
 //
@@ -135,8 +160,13 @@
 //
 // # Contents
 //
-// There are few special functions (assertion, custom checkers, etc.).
+// Constructors:
 //
+//	New   Must   T
+//
+// Other special methods (assertion, context, custom checkers, etc.).
+//
+//	Context   MergeContext
 //	Error
 //	Must
 //	MustAll

@@ -54,7 +54,7 @@ func (c testStat) String() string {
 //nolint:gochecknoglobals // By design.
 var (
 	statsMu sync.Mutex
-	stats   = make(map[*testing.T]*testStat)
+	stats   = make(map[testing.TB]*testStat)
 )
 
 // Report output statistics about passed/failed checks.
@@ -72,7 +72,7 @@ func Report() {
 	defer statsMu.Unlock()
 
 	total := newTestStat("(total)", true)
-	ts := make([]*testing.T, 0, len(stats))
+	ts := make([]testing.TB, 0, len(stats))
 	for t := range stats {
 		ts = append(ts, t)
 		total.passed.value += stats[t].passed.value
@@ -85,7 +85,7 @@ func Report() {
 	total.failed.size = digits(total.failed.value)
 
 	if testing.Verbose() {
-		slices.SortFunc(ts, func(a, b *testing.T) int { //nolint:thelper // False positive.
+		slices.SortFunc(ts, func(a, b testing.TB) int { //nolint:thelper // False positive.
 			return cmp.Compare(a.Name(), b.Name())
 		})
 		for _, t := range ts {

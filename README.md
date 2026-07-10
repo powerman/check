@@ -36,26 +36,33 @@ on steroids. :)
 
 ## Quickstart
 
-Just wrap each (including subtests) `*testing.T` using `check.T()` and write
-tests as usually with testing package. Call new methods provided by this
-package to have more clean/concise test code and cool dump/diff.
+Wrap each (including subtests) `*testing.T`/`*testing.B`/`*testing.F`
+using `check.Must()` and write tests as usually with testing package.
+Call new methods provided by this package to have more clean/concise test code
+and cool dump/diff.
+
+`check.Must()` stops the test on the first failed check (like `testify/require`).
+Use `check.New()` instead for the softer, `testify/assert`-like behavior
+where a failed check doesn't stop the test.
 
 > [!NOTE]
 >
-> If you use `t.Parallel()` prefer calling `tt.Parallel()` on the original `*testing.T`
-> before wrapping with `check.T()` — this satisfies the `paralleltest` linter:
+> Call `tb.Run()`/`tb.Parallel()` on the original `*testing.T`/`*testing.B`
+> before wrapping it with `check.Must()`/`check.New()` —
+> these two aren't available on the wrapped value
+> (this also satisfies the `paralleltest` linter):
 
 ```go
 import "github.com/powerman/check"
 
 func TestSomething(tt *testing.T) {
     tt.Parallel()
-    t := check.T(tt)
+    t := check.Must(tt)
     t.Equal(2, 2)
     t.Log("You can use new t just like usual *testing.T")
-    t.Run("Subtests/Parallel example", func(tt *testing.T) {
+    tt.Run("Subtests/Parallel example", func(tt *testing.T) {
         tt.Parallel()
-        t := check.T(tt)
+        t := check.Must(tt)
         t.NotEqual(2, 3, "should not be 3!")
         obj, err := NewObj()
         if t.Nil(err) {
@@ -70,6 +77,13 @@ To get optional statistics about executed checkers add:
 ```go
 func TestMain(m *testing.M) { check.TestMain(m) }
 ```
+
+### Legacy `check.T()`
+
+`check.T(tt *testing.T) *check.C` is the original, soft-mode-only constructor
+kept for backward compatibility - `*check.C` behaves exactly like it always did,
+including direct access to the wrapped `*testing.T` via its `T` field.
+New code should prefer `check.New()`/`check.Must()`.
 
 ## Installation
 

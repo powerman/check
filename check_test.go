@@ -260,11 +260,11 @@ func TestMust(tt *testing.T) {
 	t.Must(t.NotNil(false))
 }
 
-func bePositive(_ *check.C, actual any) bool {
+func bePositive(_ *check.TB, actual any) bool {
 	return actual.(int) > 0
 }
 
-func beEqual(_ *check.C, actual, expected any) bool {
+func beEqual(_ *check.TB, actual, expected any) bool {
 	return actual == expected
 }
 
@@ -273,7 +273,7 @@ func TestCheckerShould(tt *testing.T) {
 	t := check.T(tt)
 	t.Should(bePositive, 42, "custom check!!!")
 	t.Panic(func() { t.Should(bePositive, "42", "bad arg type") })
-	t.TODO().Should(func(_ *check.C, _ any) bool { return false }, 42)
+	t.TODO().Should(func(_ *check.TB, _ any) bool { return false }, 42)
 	t.Should(beEqual, 123, 123)
 	t.TODO().Should(beEqual, 123, 124)
 	t.Panic(func() { t.Should(func() {}, nil) })
