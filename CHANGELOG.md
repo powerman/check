@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-07-10
+
+### 🔔 Changed
+
+- Extract protobuf/gRPC deps into external modules by @powerman in [2194188]
+
+[1.12.0]: https://github.com/powerman/check/compare/v1.11.0..v1.12.0
+[2194188]: https://github.com/powerman/check/commit/219418899d16476bdaf48d7366936dc287473d54
+
 ## [1.11.0] - 2026-07-09
 
 ### 🚀 Added
