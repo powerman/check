@@ -54,7 +54,7 @@
 // [*testing.T]/[*testing.B]/[*testing.F] before wrapping it
 // (this also satisfies the paralleltest linter).
 //
-// [C] (returned by the legacy [T]) is a soft-mode-only,
+// [C] (returned by the legacy [T]) is a soft-mode by default,
 // [*testing.T]-only compatibility shell kept for old code:
 // it behaves exactly like it always did,
 // including direct access to the wrapped [*testing.T] via its T field,
@@ -73,7 +73,7 @@
 //	t.NotErr(err, io.EOF) // nil is not io.EOF, so it's ok too
 //
 //	// When need to match by error's text:
-//	t.Match(err, "file.*permission")
+//	t.Match(err, `file.*permission`)
 //
 //	// Use Equal ONLY when checking for same instance:
 //	t.Equal(io.EOF, io.EOF)                // this works
@@ -85,11 +85,13 @@
 //	t.ErrIs(err, io.EOF)            // errors.Is(err, io.EOF)
 //	t.ErrAs(err, &targetType)       // errors.As(err, &targetType)
 //
-//	// When to use which:
-//	//   - Err    — same type and value (unwraps to root, compares by value)
-//	//   - ErrIs  — standard errors.Is (not value comparison)
-//	//   - ErrAs  — extract the first matching error type
-//	//   - Match  — check by error text against a regexp
+// When to use which:
+//
+//   - Err    — same type and value (unwraps to root, compares by value),
+//     support for extra custom error types (e.g. gRPC status or validator.FieldError)
+//   - ErrIs  — standard [errors.Is] (not value comparison)
+//   - ErrAs  — extract the first matching error type
+//   - Match  — check by error text against a regexp
 //
 // ★ Each check returns bool, so you can easily skip problematic code:
 //
@@ -97,11 +99,11 @@
 //		t.Match(obj.field, `^\d+$`)
 //	}
 //
-// ★ You can turn any check into assertion to stop test immediately:
+// ★ You can turn any soft ([New], legacy [T]) check into assertion to stop test immediately:
 //
 //	t.Must(t.Nil(err))
 //
-// ★ You can turn all checks into assertions to stop test immediately:
+// ★ You can turn all soft checks into assertions to stop test immediately (or just use [Must]):
 //
 //	t = t.MustAll()
 //	t.Nil(err)
@@ -121,7 +123,7 @@
 //	t.GE(got, want) // same as t.GreaterOrEqual
 //
 // ★ If you need custom check, which isn't available out-of-box - see
-// Should checker, it'll let you plug in your own checker with ease.
+// [Should] checker, it'll let you plug in your own checker with ease.
 //
 // ★ It will panic when called with arg of wrong type - because this
 // means bug in your test.
@@ -139,9 +141,9 @@
 //	export NO_COLOR=1
 //
 // ★ With the legacy [T] (whose [C] does provide Run/Parallel),
-// if you use `t.Parallel()` inside a subtest,
-// prefer calling `tt.Parallel()` on the original *[testing.T] before wrapping with check.T() —
-// this satisfies the `paralleltest` linter:
+// if you use t.Parallel() inside a subtest,
+// prefer calling tt.Parallel() on the original *[testing.T] before wrapping with check.T() —
+// this satisfies the paralleltest linter:
 //
 //	t.Run("subtest", func(tt *testing.T) {
 //		tt.Parallel()
@@ -160,7 +162,7 @@
 //
 //	import _ "github.com/powerman/checkgrpc"
 //
-// This enables [proto.Equal] for protobuf messages in [DeepEqual]/[NotDeepEqual]
+// This enables proto.Equal for protobuf messages in [DeepEqual]/[NotDeepEqual]
 // and gRPC status comparison in [Err]/[NotErr].
 //
 // # Contents
@@ -172,9 +174,10 @@
 // Other special methods (assertion, context, custom checkers, etc.).
 //
 //	Context   MergeContext
-//	Error
-//	Must
-//	MustAll
+//	Error     Errorf
+//	Fatal     Fatalf
+//	Fail      FailNow
+//	Must      MustAll
 //	Should
 //	TODO
 //
