@@ -244,7 +244,18 @@ func newValuesSorter(values []reflect.Value, cs *ConfigState) sort.Interface {
 	if vs.strings == nil && cs.SpewKeys {
 		vs.strings = make([]string, len(values))
 		for i := range vs.values {
-			vs.strings[i] = Sprintf("%#v", vs.values[i].Interface())
+			v := vs.values[i]
+			// Keys taken from unexported struct fields are read-only,
+			// so Interface would panic. Bypass like handleMethods does;
+			// under "-tags safe" fall back to String.
+			if !v.CanInterface() {
+				v = unsafeReflectValue(v)
+			}
+			if v.CanInterface() {
+				vs.strings[i] = Sprintf("%#v", v.Interface())
+			} else {
+				vs.strings[i] = v.String()
+			}
 		}
 	}
 	return vs
@@ -312,6 +323,18 @@ func valueSortLess(a, b reflect.Value) bool {
 		for i := 0; i < l; i++ {
 			av := a.Index(i)
 			bv := b.Index(i)
+			// Array elements taken from unexported struct fields are
+			// flagged read-only, so Interface would panic. Bypass the
+			// restriction the same way handleMethods does. Under
+			// "-tags safe" the bypass is a no-op, so guard with
+			// CanInterface and fall back to the String comparison below.
+			if !av.CanInterface() {
+				av = unsafeReflectValue(av)
+				bv = unsafeReflectValue(bv)
+			}
+			if !av.CanInterface() {
+				break
+			}
 			if av.Interface() == bv.Interface() {
 				continue
 			}

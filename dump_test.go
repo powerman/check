@@ -134,3 +134,19 @@ func TestDump(tt *testing.T) {
 		}
 	}
 }
+
+func TestDumpUnexportedMapKeysNoPanic(tt *testing.T) {
+	tt.Parallel()
+	cases := []any{
+		struct{ f map[[1]byte]int }{f: map[[1]byte]int{{1}: 10, {2}: 20}},
+		struct {
+			f map[struct{ A, B int }]int
+		}{f: map[struct{ A, B int }]int{{1, 2}: 10, {3, 4}: 20}},
+	}
+	for i, v := range cases {
+		got := newDump(v).String() // Must not panic (go-spew#108).
+		if got == "" {
+			tt.Errorf("case %d: empty dump", i)
+		}
+	}
+}
