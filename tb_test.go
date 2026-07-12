@@ -112,7 +112,7 @@ func TestMergeContext(tt *testing.T) {
 	type keyB struct{}
 
 	t := check.New(tt)
-	base := context.WithValue(context.Background(), keyA{}, "from-base")
+	base := context.WithValue(t.Context(), keyA{}, "from-base")
 
 	merged := t.MergeContext(base)
 	t.Equal(merged.Context().Value(keyA{}), "from-base")
@@ -128,8 +128,8 @@ func TestMergeContextValuePrecedence(tt *testing.T) {
 	type key struct{}
 
 	t := check.New(tt)
-	tWithValue := t.MergeContext(context.WithValue(context.Background(), key{}, "current"))
-	merged := tWithValue.MergeContext(context.WithValue(context.Background(), key{}, "new"))
+	tWithValue := t.MergeContext(context.WithValue(t.Context(), key{}, "current"))
+	merged := tWithValue.MergeContext(context.WithValue(t.Context(), key{}, "new"))
 
 	// Values are looked up in the newly merged ctx first.
 	t.Equal(merged.Context().Value(key{}), "new")
@@ -139,7 +139,7 @@ func TestMergeContextCancellation(tt *testing.T) {
 	tt.Parallel()
 	t := check.New(tt)
 
-	baseCtx, baseCancel := context.WithCancel(context.Background())
+	baseCtx, baseCancel := context.WithCancel(t.Context())
 	tt.Cleanup(baseCancel)
 	merged := t.MergeContext(baseCtx)
 
