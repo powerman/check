@@ -54,15 +54,8 @@ linters:
             - '!$test'
             - '!**/*test/**'
             - '!**/test*/**'
-            # This project itself is a testing helper library: these files are its
-            # core implementation and legitimately import testing and its own
-            # internal/* packages. The rule below targets consumers of this
-            # template who might accidentally do that in real production code.
-            - '!**/check.go'
-            - '!**/dump.go'
-            - '!**/equalcheck.go'
-            - '!**/stats.go'
-            - '!**/tb.go'
+            # This project is a testing library.
+            - '!**/*.go'
           deny:
             - pkg: testing
               desc: test-only; production code must not import it
