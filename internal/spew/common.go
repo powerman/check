@@ -320,7 +320,7 @@ func valueSortLess(a, b reflect.Value) bool {
 	case reflect.Array:
 		// Compare the contents of both arrays.
 		l := a.Len()
-		for i := 0; i < l; i++ {
+		for i := range l {
 			av := a.Index(i)
 			bv := b.Index(i)
 			// Array elements taken from unexported struct fields are

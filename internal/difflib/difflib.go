@@ -23,20 +23,6 @@ import (
 	"strings"
 )
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 func calculateRatio(matches, length int) float64 {
 	if length > 0 {
 		return 2.0 * float64(matches) / float64(length)
@@ -199,12 +185,15 @@ func (m *SequenceMatcher) isBJunk(s string) bool {
 // If IsJunk is not defined:
 //
 // Return (i,j,k) such that a[i:i+k] is equal to b[j:j+k], where
-//     alo <= i <= i+k <= ahi
-//     blo <= j <= j+k <= bhi
+//
+//	alo <= i <= i+k <= ahi
+//	blo <= j <= j+k <= bhi
+//
 // and for all (i',j',k') meeting those conditions,
-//     k >= k'
-//     i <= i'
-//     and if i == i', j <= j'
+//
+//	k >= k'
+//	i <= i'
+//	and if i == i', j <= j'
 //
 // In other words, of all maximal matching blocks, return one that
 // starts earliest in a, and of all those maximal matching blocks that
@@ -559,7 +548,7 @@ type UnifiedDiff struct {
 func WriteUnifiedDiff(writer io.Writer, diff UnifiedDiff) error {
 	buf := bufio.NewWriter(writer)
 	defer buf.Flush()
-	wf := func(format string, args ...interface{}) error {
+	wf := func(format string, args ...any) error {
 		_, err := buf.WriteString(fmt.Sprintf(format, args...))
 		return err
 	}
@@ -675,7 +664,7 @@ func WriteContextDiff(writer io.Writer, diff ContextDiff) error {
 	buf := bufio.NewWriter(writer)
 	defer buf.Flush()
 	var diffErr error
-	wf := func(format string, args ...interface{}) {
+	wf := func(format string, args ...any) {
 		_, err := buf.WriteString(fmt.Sprintf(format, args...))
 		if diffErr == nil && err != nil {
 			diffErr = err
