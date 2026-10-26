@@ -18,7 +18,6 @@
 // tag is deprecated and thus should not be used.
 // Go versions prior to 1.4 are disabled because they use a different layout
 // for interfaces which make the implementation of unsafeReflectValue more complex.
-//go:build !js && !appengine && !safe && !disableunsafe && go1.4
 // +build !js,!appengine,!safe,!disableunsafe,go1.4
 
 package spew
@@ -70,7 +69,7 @@ var okFlags = []struct {
 }}
 
 var flagValOffset = func() uintptr {
-	field, ok := reflect.TypeFor[reflect.Value]().FieldByName("flag")
+	field, ok := reflect.TypeOf(reflect.Value{}).FieldByName("flag")
 	if !ok {
 		panic("reflect.Value has no flag field")
 	}
@@ -79,7 +78,7 @@ var flagValOffset = func() uintptr {
 
 // flagField returns a pointer to the flag field of a reflect.Value.
 func flagField(v *reflect.Value) *flag {
-	return (*flag)(unsafe.Add(unsafe.Pointer(v), flagValOffset))
+	return (*flag)(unsafe.Pointer(uintptr(unsafe.Pointer(v)) + flagValOffset))
 }
 
 // unsafeReflectValue converts the passed reflect.Value into a one that bypasses
@@ -104,11 +103,11 @@ func unsafeReflectValue(v reflect.Value) reflect.Value {
 // Sanity checks against future reflect package changes
 // to the type or semantics of the Value.flag field.
 func init() {
-	field, ok := reflect.TypeFor[reflect.Value]().FieldByName("flag")
+	field, ok := reflect.TypeOf(reflect.Value{}).FieldByName("flag")
 	if !ok {
 		panic("reflect.Value has no flag field")
 	}
-	if field.Type.Kind() != reflect.TypeFor[flag]().Kind() {
+	if field.Type.Kind() != reflect.TypeOf(flag(0)).Kind() {
 		panic("reflect.Value flag field has changed kind")
 	}
 	type t0 int

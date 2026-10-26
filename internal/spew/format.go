@@ -32,7 +32,7 @@ const supportedFlags = "0-+# "
 // be used to get a new Formatter which can be used directly as arguments
 // in standard fmt package printing calls.
 type formatState struct {
-	value          any
+	value          interface{}
 	fs             fmt.State
 	depth          int
 	pointers       map[uintptr]int
@@ -128,7 +128,7 @@ func (f *formatState) formatPtr(v reflect.Value) {
 	cycleFound := false
 	indirects := 0
 	ve := v
-	for ve.Kind() == reflect.Pointer {
+	for ve.Kind() == reflect.Ptr {
 		if ve.IsNil() {
 			nilFound = true
 			break
@@ -207,7 +207,7 @@ func (f *formatState) format(v reflect.Value) {
 	}
 
 	// Handle pointers specially.
-	if kind == reflect.Pointer {
+	if kind == reflect.Ptr {
 		f.formatPtr(v)
 		return
 	}
@@ -270,7 +270,7 @@ func (f *formatState) format(v reflect.Value) {
 			f.fs.Write(maxShortBytes)
 		} else {
 			numEntries := v.Len()
-			for i := range numEntries {
+			for i := 0; i < numEntries; i++ {
 				if i > 0 {
 					f.fs.Write(spaceBytes)
 				}
@@ -291,7 +291,7 @@ func (f *formatState) format(v reflect.Value) {
 			f.fs.Write(nilAngleBytes)
 		}
 
-	case reflect.Pointer:
+	case reflect.Ptr:
 		// Do nothing.  We should never get here since pointers have already
 		// been handled above.
 
@@ -333,7 +333,7 @@ func (f *formatState) format(v reflect.Value) {
 			f.fs.Write(maxShortBytes)
 		} else {
 			vt := v.Type()
-			for i := range numFields {
+			for i := 0; i < numFields; i++ {
 				if i > 0 {
 					f.fs.Write(spaceBytes)
 				}
@@ -391,7 +391,7 @@ func (f *formatState) Format(fs fmt.State, verb rune) {
 
 // newFormatter is a helper function to consolidate the logic from the various
 // public methods which take varying config states.
-func newFormatter(cs *ConfigState, v any) fmt.Formatter {
+func newFormatter(cs *ConfigState, v interface{}) fmt.Formatter {
 	fs := &formatState{value: v, cs: cs}
 	fs.pointers = make(map[uintptr]int)
 	return fs
@@ -414,6 +414,6 @@ Typically this function shouldn't be called directly.  It is much easier to make
 use of the custom formatter by calling one of the convenience functions such as
 Printf, Println, or Fprintf.
 */
-func NewFormatter(v any) fmt.Formatter {
+func NewFormatter(v interface{}) fmt.Formatter {
 	return newFormatter(&Config, v)
 }

@@ -31,7 +31,7 @@ import (
 var (
 	// uint8Type is a reflect.Type representing a uint8.  It is used to
 	// convert cgo types to uint8 slices for hexdumping.
-	uint8Type = reflect.TypeFor[uint8]()
+	uint8Type = reflect.TypeOf(uint8(0))
 
 	// cCharRE is a regular expression that matches a cgo char.
 	// It is used to detect character arrays to hexdump them.
@@ -97,7 +97,7 @@ func (d *dumpState) dumpPtr(v reflect.Value) {
 	cycleFound := false
 	indirects := 0
 	ve := v
-	for ve.Kind() == reflect.Pointer {
+	for ve.Kind() == reflect.Ptr {
 		if ve.IsNil() {
 			nilFound = true
 			break
@@ -215,7 +215,7 @@ func (d *dumpState) dumpSlice(v reflect.Value) {
 			// Convert and copy each element into a uint8 byte
 			// slice.
 			buf = make([]uint8, numEntries)
-			for i := range numEntries {
+			for i := 0; i < numEntries; i++ {
 				vv := v.Index(i)
 				buf[i] = uint8(vv.Convert(uint8Type).Uint())
 			}
@@ -234,7 +234,7 @@ func (d *dumpState) dumpSlice(v reflect.Value) {
 	}
 
 	// Recursively call dump for each item.
-	for i := range numEntries {
+	for i := 0; i < numEntries; i++ {
 		d.dump(d.unpackValue(v.Index(i)))
 		if i < (numEntries - 1) {
 			d.w.Write(commaNewlineBytes)
@@ -257,7 +257,7 @@ func (d *dumpState) dump(v reflect.Value) {
 	}
 
 	// Handle pointers specially.
-	if kind == reflect.Pointer {
+	if kind == reflect.Ptr {
 		d.indent()
 		d.dumpPtr(v)
 		return
@@ -365,7 +365,7 @@ func (d *dumpState) dump(v reflect.Value) {
 			d.w.Write(nilAngleBytes)
 		}
 
-	case reflect.Pointer:
+	case reflect.Ptr:
 		// Do nothing.  We should never get here since pointers have already
 		// been handled above.
 
@@ -412,7 +412,7 @@ func (d *dumpState) dump(v reflect.Value) {
 		} else {
 			vt := v.Type()
 			numFields := v.NumField()
-			for i := range numFields {
+			for i := 0; i < numFields; i++ {
 				d.indent()
 				vtf := vt.Field(i)
 				d.w.Write([]byte(vtf.Name))
@@ -450,7 +450,7 @@ func (d *dumpState) dump(v reflect.Value) {
 
 // fdump is a helper function to consolidate the logic from the various public
 // methods which take varying writers and config states.
-func fdump(cs *ConfigState, w io.Writer, a ...any) {
+func fdump(cs *ConfigState, w io.Writer, a ...interface{}) {
 	for _, arg := range a {
 		if arg == nil {
 			w.Write(interfaceBytes)
@@ -469,13 +469,13 @@ func fdump(cs *ConfigState, w io.Writer, a ...any) {
 
 // Fdump formats and displays the passed arguments to io.Writer w.  It formats
 // exactly the same as Dump.
-func Fdump(w io.Writer, a ...any) {
+func Fdump(w io.Writer, a ...interface{}) {
 	fdump(&Config, w, a...)
 }
 
 // Sdump returns a string with the passed arguments formatted exactly the same
 // as Dump.
-func Sdump(a ...any) string {
+func Sdump(a ...interface{}) string {
 	var buf bytes.Buffer
 	fdump(&Config, &buf, a...)
 	return buf.String()
@@ -488,15 +488,15 @@ pointer addresses used to indirect to the final value.  It provides the
 following features over the built-in printing facilities provided by the fmt
 package:
 
-  - Pointers are dereferenced and followed
-  - Circular data structures are detected and handled properly
-  - Custom Stringer/error interfaces are optionally invoked, including
-    on unexported types
-  - Custom types which only implement the Stringer/error interfaces via
-    a pointer receiver are optionally invoked when passing non-pointer
-    variables
-  - Byte arrays and slices are dumped like the hexdump -C command which
-    includes offsets, byte values in hex, and ASCII output
+	* Pointers are dereferenced and followed
+	* Circular data structures are detected and handled properly
+	* Custom Stringer/error interfaces are optionally invoked, including
+	  on unexported types
+	* Custom types which only implement the Stringer/error interfaces via
+	  a pointer receiver are optionally invoked when passing non-pointer
+	  variables
+	* Byte arrays and slices are dumped like the hexdump -C command which
+	  includes offsets, byte values in hex, and ASCII output
 
 The configuration options are controlled by an exported package global,
 spew.Config.  See ConfigState for options documentation.
@@ -504,6 +504,6 @@ spew.Config.  See ConfigState for options documentation.
 See Fdump if you would prefer dumping to an arbitrary io.Writer or Sdump to
 get the formatted result as a string.
 */
-func Dump(a ...any) {
+func Dump(a ...interface{}) {
 	fdump(&Config, os.Stdout, a...)
 }
