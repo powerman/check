@@ -557,7 +557,7 @@ func TestCheckerEqual(tt *testing.T) {
 	todo.NotDeepEqual(nil, nil)
 
 	// Equal match, DeepEqual not match.
-	t.False(xTime == xTimeEST) //nolint:revive,staticcheck // Need == instead of Equal() here.
+	t.False(xTime == xTimeEST) //nolint:staticcheck // Need == instead of Equal() here.
 	t.Equal(xTime, xTimeEST)
 	t.EQ(xTime, xTimeEST)
 	t.DeepEqual(xTime, xTimeEST)

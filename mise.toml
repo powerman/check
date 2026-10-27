@@ -115,10 +115,6 @@ run = "git ls-files -z -co --exclude-standard '*.yml' '*.yaml' | xargs -0 -r yam
 
 [tasks.'lint:go']
 description = 'Lint Go files'
-# golangci-lint 2.12.2 (built with go1.26.2) fails to typecheck against the
-# go1.27 GOROOT (e.g. internal/poll/splice_linux.go), so pin go1.26 here until
-# golangci-lint is upgraded to a version that supports go1.27.
-tools = { go = '1.26' }
 run = 'golangci-lint run'
 
 [tasks.'lint:go-compile-windows']
