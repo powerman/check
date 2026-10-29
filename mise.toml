@@ -41,10 +41,9 @@ gh = 'latest'
 cover = '.cache/cover.out'
 
 
-[tasks.'changelog:skip-commit']
-description = 'Add commit hash to .cliffignore to exclude from CHANGELOG'
-usage = 'arg "<commit>" help="Git revision (e.g. HEAD or a1b2c4d)"'
-run = 'git rev-parse --verify "${usage_commit}" >> .cliffignore'
+[tasks.default]
+description = 'Run all formatters, linters and tests'
+depends = ['fmt', 'lint', 'test']
 
 [tasks.fix]
 description = 'Apply all automatic fixes'
@@ -61,10 +60,6 @@ depends = ['lint:*']
 [tasks.test]
 description = 'Run all tests'
 depends = ['test:*']
-
-[tasks.default]
-description = 'Run all formatters, linters and tests'
-depends = ['fmt', 'lint', 'test']
 
 [tasks.ci]
 description = 'Run all CI tasks'
@@ -157,16 +152,6 @@ wait_for = ['lint:*']
 tools = { go = '1.26' }
 run = 'cd test && gotestsum -- -race -timeout=60s ./...'
 
-[tasks.'cover:go:total']
-description = 'Show Go test coverage total'
-depends = 'cover:go:generate'
-run = 'go tool cover -func={{vars.cover}} | tail -n 1 | xargs echo'
-
-[tasks.'cover:go:browse']
-description = 'Show Go test coverage in a browser'
-depends = 'cover:go:generate'
-run = 'go tool cover -html={{vars.cover}}'
-
 [tasks.'cover:go:generate']
 hide = true
 depends = 'cachedir'
@@ -179,6 +164,21 @@ gotestsum -- \
     ./...
 go tool cover -html={{vars.cover}} -o {{vars.cover}}.html
 '''
+
+[tasks.'cover:go:total']
+description = 'Show Go test coverage total'
+depends = 'cover:go:generate'
+run = 'go tool cover -func={{vars.cover}} | tail -n 1 | xargs echo'
+
+[tasks.'cover:go:browse']
+description = 'Show Go test coverage in a browser'
+depends = 'cover:go:generate'
+run = 'go tool cover -html={{vars.cover}}'
+
+[tasks.'changelog:skip-commit']
+description = 'Add commit hash to .cliffignore to exclude from CHANGELOG'
+usage = 'arg "<commit>" help="Git revision (e.g. HEAD or a1b2c4d)"'
+run = 'git rev-parse --verify "${usage_commit}" >> .cliffignore'
 
 # Runs a command which changes files, except files with git attribute "vendored"
 # (see .gitattributes): they are restored, so they must have no uncommitted changes.
