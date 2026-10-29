@@ -45,6 +45,10 @@ cover = '.cache/cover.out'
 description = 'Run all formatters, linters and tests'
 depends = ['fmt', 'lint', 'test']
 
+[tasks.bump]
+description = 'Upgrade all dependencies'
+depends = ['bump:*']
+
 [tasks.fix]
 description = 'Apply all automatic fixes'
 depends = ['fix:*']
@@ -68,6 +72,21 @@ depends = ['fmt', 'lint', 'test']
 run = '! git status --porcelain | tee /dev/stderr | grep -q .'
 run_windows = 'powershell -c "$status = git status --porcelain; if ($status) { $status; exit 1 }"'
 
+[tasks.'bump:deps']
+description = 'Upgrade dependencies of all Go modules'
+shell = 'bash -c'
+run = '''
+set -euo pipefail
+# Nested modules may replace the root one by a local path and depend on its requirements,
+# so the root module goes first.
+# Modules in testdata/ and vendor/ are fixtures.
+mapfile -t mods < <(git ls-files -- '*/go.mod' \
+    ':(exclude,glob)**/testdata/**' ':(exclude,glob)**/vendor/**')
+for dir in . "${mods[@]%/go.mod}"; do
+    (cd "$dir" && go get -u -t ./... && go mod tidy)
+done
+'''
+
 [tasks.'fix:go']
 description = 'Modernize Go code by go fix'
 run = 'mise run keep-vendored go fix ./...'
@@ -80,19 +99,18 @@ run = 'mise run keep-vendored golangci-lint run --fix --issues-exit-code=0'
 
 [tasks.'fmt:markdown']
 description = 'Format markdown files'
-sources = ['**/*.md']
+sources = ['**/*.md', '.prettier*', '.editorconfig', 'mise.lock']
 run = 'prettier --write "**/*.md"'
 
-# Taplo doesn't respect .gitignore.
 [tasks.'fmt:toml']
 description = 'Format TOML files'
-sources = ['**/*.toml']
+sources = ['**/*.toml', 'mise.lock']
 env.RUST_LOG = 'warn' # Hide INFO logs of taplo.
 run = "git ls-files -z -co --exclude-standard '*.toml' | xargs -0 -r taplo format"
 
 [tasks.'fmt:yaml']
 description = 'Format YAML files'
-sources = ['**/*.yml', '**/*.yaml']
+sources = ['**/*.yml', '**/*.yaml', 'mise.lock']
 run = "git ls-files -z -co --exclude-standard '*.yml' '*.yaml' | xargs -0 -r yamlfmt"
 
 [tasks.'fmt:go']
@@ -106,20 +124,20 @@ run = 'actionlint'
 [tasks.'lint:markdown']
 description = 'Lint markdown files'
 wait_for = ['fmt:markdown']
-sources = ['**/*.md']
+sources = ['**/*.md', '.prettier*', '.editorconfig', 'mise.lock']
 run = 'prettier --check "**/*.md"'
 
 [tasks.'lint:toml']
 description = 'Check TOML files formatting'
 wait_for = ['fmt:toml']
-sources = ['**/*.toml']
+sources = ['**/*.toml', 'mise.lock']
 env.RUST_LOG = 'warn' # Hide INFO logs of taplo.
 run = "git ls-files -z -co --exclude-standard '*.toml' | xargs -0 -r taplo format --check"
 
 [tasks.'lint:yaml']
 description = 'Check YAML files formatting'
 wait_for = ['fmt:yaml']
-sources = ['**/*.yml', '**/*.yaml']
+sources = ['**/*.yml', '**/*.yaml', 'mise.lock']
 run = "git ls-files -z -co --exclude-standard '*.yml' '*.yaml' | xargs -0 -r yamlfmt -lint"
 
 [tasks.'lint:go']
