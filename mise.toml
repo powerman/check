@@ -41,9 +41,26 @@ gh = 'latest'
 cover = '.cache/cover.out'
 
 
+# Tasks which read files must not run in parallel with tasks which write them.
+# Tasks which combine them SHOULD set a safe order by groups of tasks in `run`:
+# groups run one after another, tasks of one group run in parallel.
+# Use `depends` only for tasks which are safe to run in parallel.
+#
+# Each run-group has own graph of dependencies,
+# and `wait_for` works only inside of one graph.
+# A task reached from two run-groups runs twice,
+# unless an earlier run-group of the same `run` lists it or has it in `depends` of listed tasks
+# (their `depends_post` and `run` don't count).
+#
+# An alternative is `depends` with `wait_for` between readers and writers.
+# Avoid it or be careful: it's easy to make a mistake there and get a non-obvious race.
 [tasks.default]
 description = 'Run all formatters, linters and tests'
-depends = ['fmt', 'lint', 'test']
+run = [
+    { task = 'fmt' },
+    { task = 'test:go' }, # Output of tests must not mix with output of linters.
+    { tasks = ['lint', 'test'] },
+]
 
 [tasks.bump]
 description = 'Upgrade all dependencies'
@@ -51,11 +68,20 @@ depends = ['bump:*']
 
 [tasks.fix]
 description = 'Apply all automatic fixes'
-depends = ['fix:*']
+run = [
+    { task = 'fix:go' },
+    { task = 'fix:*' },
+]
 
 [tasks.fmt]
 description = 'Format all files'
-depends = ['fmt:*']
+# Configs of formatters are YAML and TOML files too,
+# and a formatter must not read a config while it's being rewritten.
+run = [
+    { task = 'fmt:yaml' },
+    { task = 'fmt:toml' },
+    { task = 'fmt:*' },
+]
 
 [tasks.lint]
 description = 'Run all linters'
@@ -67,10 +93,11 @@ depends = ['test:*']
 
 [tasks.ci]
 description = 'Run all CI tasks'
-depends = ['fmt', 'lint', 'test']
-# Is working tree clean after fmt?
-run = '! git status --porcelain | tee /dev/stderr | grep -q .'
-run_windows = 'powershell -c "$status = git status --porcelain; if ($status) { $status; exit 1 }"'
+run = [
+    { task = 'check-drift' },
+    { task = 'test:go' }, # Output of tests must not mix with output of linters.
+    { tasks = ['lint', 'test'] },
+]
 
 [tasks.'bump:deps']
 description = 'Upgrade dependencies of all Go modules'
@@ -93,7 +120,6 @@ run = 'mise run keep-vendored go fix ./...'
 
 [tasks.'fix:golangci-lint']
 description = 'Fix issues found by golangci-lint'
-wait_for = ['fix:go']
 # Issues without automatic fixes are reported by lint:go.
 run = 'mise run keep-vendored golangci-lint run --fix --issues-exit-code=0'
 
@@ -123,20 +149,17 @@ run = 'actionlint'
 
 [tasks.'lint:markdown']
 description = 'Lint markdown files'
-wait_for = ['fmt:markdown']
 sources = ['**/*.md', '.prettier*', '.editorconfig', 'mise.lock']
 run = 'prettier --check "**/*.md"'
 
 [tasks.'lint:toml']
 description = 'Check TOML files formatting'
-wait_for = ['fmt:toml']
 sources = ['**/*.toml', 'mise.lock']
 env.RUST_LOG = 'warn' # Hide INFO logs of taplo.
 run = "git ls-files -z -co --exclude-standard '*.toml' | xargs -0 -r taplo format --check"
 
 [tasks.'lint:yaml']
 description = 'Check YAML files formatting'
-wait_for = ['fmt:yaml']
 sources = ['**/*.yml', '**/*.yaml', 'mise.lock']
 run = "git ls-files -z -co --exclude-standard '*.yml' '*.yaml' | xargs -0 -r yamlfmt -lint"
 
@@ -150,23 +173,19 @@ run = 'GOOS=windows go test -c -o /dev/null ./...'
 
 [tasks.'test:go']
 description = 'Run Go tests for a whole project'
-wait_for = ['lint:*'] # Avoid interleaved output with linters.
 run = 'gotestsum -- -race -timeout=60s ./...'
 
 [tasks.'test:go-1_26']
 description = 'Run Go tests for a whole project using the oldest supported Go version'
-wait_for = ['lint:*']
 tools = { go = '1.26' }
 run = 'gotestsum -- -race -timeout=60s ./...'
 
 [tasks.'test:go-submodule']
 description = 'Run Go tests in the test/ submodule'
-wait_for = ['lint:*']
 run = 'cd test && gotestsum -- -race -timeout=60s ./...'
 
 [tasks.'test:go-submodule-1_26']
 description = 'Run Go tests in the test/ submodule using the oldest supported Go version'
-wait_for = ['lint:*']
 tools = { go = '1.26' }
 run = 'cd test && gotestsum -- -race -timeout=60s ./...'
 
@@ -209,6 +228,18 @@ eval "$usage_command" || status=$?
 git ls-files -z ':(attr:vendored)' | xargs -0 -r git restore --
 exit ${status:-0}
 '''
+
+[tasks.check-drift]
+hide = true
+run = [
+    { task = 'fmt' },
+    { task = 'is-workdir-clean' },
+]
+
+[tasks.is-workdir-clean]
+hide = true
+run = '! git status --porcelain | grep .'
+run_windows = 'powershell -c "$status = git status --porcelain; if ($status) { $status; exit 1 }"'
 
 [tasks.cachedir]
 hide = true
