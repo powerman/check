@@ -54,11 +54,12 @@ cover = '.cache/cover.out'
 #
 # An alternative is `depends` with `wait_for` between readers and writers.
 # Avoid it or be careful: it's easy to make a mistake there and get a non-obvious race.
+
 [tasks.default]
 description = 'Run all formatters, linters and tests'
 run = [
     { task = 'fmt' },
-    { task = 'test:go' }, # Output of tests must not mix with output of linters.
+    { task = 'test:go' }, # Test output must not mix with linter output.
     { tasks = ['lint', 'test'] },
 ]
 
@@ -95,7 +96,7 @@ depends = ['test:*']
 description = 'Run all CI tasks'
 run = [
     { task = 'check-drift' },
-    { task = 'test:go' }, # Output of tests must not mix with output of linters.
+    { task = 'test:go' }, # Test output must not mix with linter output.
     { tasks = ['lint', 'test'] },
 ]
 
