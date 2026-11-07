@@ -155,7 +155,7 @@ run = 'actionlint'
 [tasks.'lint:markdown']
 description = 'Lint markdown files'
 sources = ['**/*.md', '.prettier*', '.editorconfig', 'mise.lock']
-run = 'prettier --check "**/*.md"'
+run = 'prettier --check --log-level warn "**/*.md"'
 
 [tasks.'lint:toml']
 description = 'Check TOML files formatting'
